@@ -1,8 +1,3 @@
-#include <SDL2/SDL.h>
-#include <glad/gl.h>
-#include <imgui_impl_opengl3.h>
-#include <imgui_impl_sdl2.h>
-
 #include <xtr_app.h>
 #include <xtr_buffer.h>
 #include <xtr_shader.h>

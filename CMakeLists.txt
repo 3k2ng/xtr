@@ -13,7 +13,17 @@ if (NOT ${SDL2_FOUND})
     )
     FetchContent_MakeAvailable(SDL2)
     set(SDL2_INCLUDE_DIRS "${SDL2_SOURCE_DIR}/include")
-    set(SDL2_LIBRARIES SDL2::SDL2)
+endif()
+
+find_package(SDL2_image)
+if (NOT ${SDL2_image})
+    FetchContent_Declare(
+        SDL2_image
+        GIT_REPOSITORY https://github.com/libsdl-org/SDL_image
+        GIT_TAG abcf63aa71b4e3ac32120fa9870a6500ddcdcc89 # 2.8.2
+    )
+    FetchContent_MakeAvailable(SDL2_image)
+    set(SDL2_image_INCLUDE_DIRS "${SDL2_image_SOURCE_DIR}/include")
 endif()
 
 FetchContent_Declare(
@@ -37,13 +47,14 @@ add_executable(xtr
 target_include_directories(xtr PRIVATE
     "./include"
     ${SDL2_INCLUDE_DIRS}
+    ${SDL2_image_INCLUDE_DIRS}
     ${imgui_SOURCE_DIR}
     "${imgui_SOURCE_DIR}/backends"
     "./external/glad/include"
-    "./external/stb"
 )
 target_link_libraries(xtr PRIVATE
-    ${SDL2_LIBRARIES}
+    SDL2::SDL2
+    SDL2_image::SDL2_image
 )
 
 file(GLOB texture_files "./data/textures/*")

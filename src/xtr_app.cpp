@@ -2,6 +2,7 @@
 namespace xtr {
 App::App() {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+    IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG);
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -32,6 +33,7 @@ App::~App() {
 
     SDL_GL_DeleteContext(_context);
     SDL_DestroyWindow(_window);
+    IMG_Quit();
     SDL_Quit();
 }
 } // namespace xtr
