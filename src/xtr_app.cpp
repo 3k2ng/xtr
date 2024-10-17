@@ -1,6 +1,6 @@
 #include <xtr_app.h>
 namespace xtr {
-App::App() {
+App::App() : _running(true) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
     IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG);
 

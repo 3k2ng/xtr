@@ -3,6 +3,7 @@
 #include <fstream>
 #include <glad/gl.h>
 #include <iostream>
+#include <sstream>
 #include <utility>
 
 namespace xtr {
