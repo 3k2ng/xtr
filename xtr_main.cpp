@@ -1,7 +1,7 @@
-#include "imgui_impl_opengl3.h"
-#include "imgui_impl_sdl2.h"
 #include <SDL2/SDL.h>
 #include <glad/gl.h>
+#include <imgui_impl_opengl3.h>
+#include <imgui_impl_sdl2.h>
 
 int main(int argc, char *argv[]) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
