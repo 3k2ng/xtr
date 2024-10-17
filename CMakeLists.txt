@@ -16,7 +16,7 @@ if (NOT ${SDL2_FOUND})
 endif()
 
 find_package(SDL2_image)
-if (NOT ${SDL2_image})
+if (NOT ${SDL2_image_FOUND})
     FetchContent_Declare(
         SDL2_image
         GIT_REPOSITORY https://github.com/libsdl-org/SDL_image
@@ -53,8 +53,8 @@ target_include_directories(xtr PRIVATE
     "./external/glad/include"
 )
 target_link_libraries(xtr PRIVATE
-    SDL2::SDL2
-    SDL2_image::SDL2_image
+    SDL2
+    SDL2_image
 )
 
 file(GLOB texture_files "./data/textures/*")
