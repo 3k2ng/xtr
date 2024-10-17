@@ -19,10 +19,10 @@ class Shader {
     }
 
     Shader(GLenum shader_type) : _shader{glCreateShader(shader_type)} {}
-    Shader(Shader &&o) : _shader{std::move(o._shader)} {};
+    Shader(Shader &&o) : _shader{o._shader} {};
     Shader(const Shader &) = delete;
     Shader &operator=(Shader &&o) {
-        _shader = std::move(o._shader);
+        _shader = o._shader;
         return *this;
     };
     Shader &operator=(const Shader &) = delete;
@@ -55,10 +55,10 @@ class Shader {
 class Program {
   public:
     Program() : _program{glCreateProgram()} {};
-    Program(Program &&o) : _program{std::move(o._program)} {};
+    Program(Program &&o) : _program{o._program} {};
     Program(const Program &) = delete;
     Program &operator=(Program &&o) {
-        _program = std::move(o._program);
+        _program = o._program;
         return *this;
     };
     Program &operator=(const Program &) = delete;

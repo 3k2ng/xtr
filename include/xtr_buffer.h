@@ -1,6 +1,5 @@
 #pragma once
 #include <glad/gl.h>
-#include <utility>
 
 namespace xtr {
 // short for vertex buffer object
@@ -31,6 +30,7 @@ class Buffer {
     inline void bind() const { glBindBuffer(_target, _buffer); }
     inline void unbind() const { glBindBuffer(_target, 0); }
 
+    inline const GLenum target() const { return _target; }
     inline operator GLuint() const { return _buffer; }
 
   private:
@@ -44,10 +44,10 @@ class Array {
     static void unbind() { glBindVertexArray(0); }
 
     Array() { glGenVertexArrays(1, &_array); }
-    Array(Array &&o) : _array{std::move(o._array)} {};
+    Array(Array &&o) : _array{o._array} {};
     Array(const Array &) = delete;
     Array &operator=(Array &&o) {
-        _array = std::move(o._array);
+        _array = o._array;
         return *this;
     };
     Array &operator=(const Array &) = delete;

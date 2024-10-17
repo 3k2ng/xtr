@@ -1,6 +1,7 @@
 #include <xtr_app.h>
 #include <xtr_buffer.h>
 #include <xtr_shader.h>
+#include <xtr_texture.h>
 
 int main(int argc, char *argv[]) {
     xtr::App app{};
@@ -60,10 +61,8 @@ int main(int argc, char *argv[]) {
                 app.quit();
             }
         }
+        app.start_frame();
 
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplSDL2_NewFrame();
-        ImGui::NewFrame();
         ImGui::Begin("panel");
         ImGui::End();
 
@@ -75,8 +74,6 @@ int main(int argc, char *argv[]) {
         program.use();
         array.bind();
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         app.end_frame();
     }
