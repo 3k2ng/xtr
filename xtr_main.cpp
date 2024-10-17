@@ -3,8 +3,17 @@
 #include <xtr_shader.h>
 #include <xtr_texture.h>
 
+struct Vertex {
+    float x, y, z;
+    float r, g, b;
+    float u, v;
+};
+
 int main(int argc, char *argv[]) {
     xtr::App app{};
+
+    SDL_Surface *madoka = IMG_Load("./data/textures/madoka.png");
+
     xtr::Program program{};
     {
         xtr::Shader vsh = xtr::Shader::from_file("./data/shaders/test.vert",
@@ -19,18 +28,23 @@ int main(int argc, char *argv[]) {
         program.log_link_status();
     }
 
-    // set up vertex data (and buffer(s)) and configure vertex attributes
-    // ------------------------------------------------------------------
-    float vertices[] = {
-        0.5f,  0.5f,  0.0f, // top right
-        0.5f,  -0.5f, 0.0f, // bottom right
-        -0.5f, -0.5f, 0.0f, // bottom left
-        -0.5f, 0.5f,  0.0f  // top left
+    xtr::Texture texture{GL_TEXTURE_2D};
+    glBindTexture(texture.target(), texture);
+    glTexParameteri(texture.target(), GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(texture.target(), GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(texture.target(), GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(texture.target(), GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(texture.target(), 0, GL_RGBA, madoka->w, madoka->h, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, madoka->pixels);
+
+    Vertex vertices[] = {
+        Vertex{0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f},
+        Vertex{0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f},
+        Vertex{-0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f},
+        Vertex{-0.5f, 0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f},
     };
     unsigned int indices[] = {
-        // note that we start from 0!
-        0, 1, 3, // first Triangle
-        1, 2, 3  // second Triangle
+        0, 1, 3, 1, 2, 3,
     };
 
     xtr::Array array;
@@ -45,9 +59,18 @@ int main(int argc, char *argv[]) {
     element_buffer.bind();
     element_buffer.data(sizeof(indices), indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
+    // position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
                           (void *)0);
     glEnableVertexAttribArray(0);
+    // color attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+                          (void *)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    // texture coord attribute
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+                          (void *)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     vertex_buffer.unbind();
 
@@ -78,5 +101,6 @@ int main(int argc, char *argv[]) {
         app.end_frame();
     }
 
+    SDL_FreeSurface(madoka);
     return 0;
 }
