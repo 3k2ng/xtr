@@ -2,36 +2,13 @@
 #include <glad/gl.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl2.h>
-#include <stb_image.h>
 
+#include <xtr_app.h>
 #include <xtr_buffer.h>
 #include <xtr_shader.h>
 
 int main(int argc, char *argv[]) {
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
-
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
-                        SDL_GL_CONTEXT_PROFILE_CORE);
-
-    SDL_Window *window =
-        SDL_CreateWindow("XToon Renderer", SDL_WINDOWPOS_UNDEFINED,
-                         SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_OPENGL);
-
-    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
-    gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress);
-
-    // Setup Dear ImGui context
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
-    (void)io;
-
-    ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
-    ImGui_ImplOpenGL3_Init("#version 330 core");
-
+    xtr::App app{};
     xtr::Program program{};
     {
         xtr::Shader vsh = xtr::Shader::from_file("./data/shaders/test.vert",
@@ -80,13 +57,12 @@ int main(int argc, char *argv[]) {
 
     array.unbind();
 
-    bool xtr_running = true;
-    while (xtr_running) {
+    while (app.is_running()) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL2_ProcessEvent(&event);
             if (event.type == SDL_QUIT) {
-                xtr_running = false;
+                app.quit();
             }
         }
 
@@ -107,17 +83,8 @@ int main(int argc, char *argv[]) {
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        SDL_GL_SwapWindow(window);
-        SDL_Delay(1);
+        app.end_frame();
     }
-
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplSDL2_Shutdown();
-    ImGui::DestroyContext();
-
-    SDL_GL_DeleteContext(gl_context);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
 
     return 0;
 }

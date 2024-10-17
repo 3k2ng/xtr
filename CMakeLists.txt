@@ -25,6 +25,7 @@ FetchContent_MakeAvailable(imgui)
 
 add_executable(xtr
     "./xtr_main.cpp"
+    "./src/xtr_app.cpp"
     "./external/glad/src/gl.c"
     "${imgui_SOURCE_DIR}/imgui.cpp"
     "${imgui_SOURCE_DIR}/imgui_draw.cpp"
