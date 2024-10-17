@@ -11,9 +11,10 @@ Having the [CMake Tools Extention](https://marketplace.visualstudio.com/items?it
 ### Visual Studio
 Project should work out of the box for Visual Studio.
 ### MacOS
-Has support for system SDL2 to reduce build time.
+Has support for system SDL2 and SDL2_image to reduce build time.
 ```
 brew install sdl2
+brew install sdl2_image
 ```
 ### Build in terminal
 ```
@@ -26,8 +27,8 @@ make
 
 ## Dependencies
 - SDL2
+- SDL2_image
 - GLAD
-- stb_image
 - Dear ImGui
 
 ## Resources
