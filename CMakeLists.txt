@@ -16,18 +16,6 @@ if (NOT ${SDL2_FOUND})
     set(SDL2_LIBRARIES SDL2::SDL2)
 endif()
 
-find_package(SDL2_image)
-if (NOT ${SDL2_image_FOUND})
-    #     FetchContent_Declare(
-    #         SDL2_image
-    #         GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
-    #         GIT_TAG abcf63aa71b4e3ac32120fa9870a6500ddcdcc89 # 2.8.2
-    #     )
-    #     FetchContent_MakeAvailable(SDL2_image)
-    #     set(SDL2_image_INCLUDE_DIRS "${SDL2_image_SOURCE_DIR}/include")
-    #     set(SDL2_image_LIBRARIES SDL2_image::SDL2_image)
-endif()
-
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY https://github.com/ocornut/imgui
@@ -47,12 +35,18 @@ add_executable(xtr
 )
 target_include_directories(xtr PRIVATE
     ${SDL2_INCLUDE_DIRS}
-    ${SDL2_image_INCLUDE_DIRS}
     ${imgui_SOURCE_DIR}
     "${imgui_SOURCE_DIR}/backends"
     "./external/glad/include"
+    "./external/stb"
 )
 target_link_libraries(xtr PRIVATE
     ${SDL2_LIBRARIES}
-    ${SDL2_image_LIBRARIES}
 )
+
+file(GLOB texture_files "./data/textures/*")
+
+foreach(file ${texture_files})
+    file(RELATIVE_PATH file ${CMAKE_CURRENT_SOURCE_DIR} ${file})
+    configure_file(${file} ${file} COPYONLY)
+endforeach()
