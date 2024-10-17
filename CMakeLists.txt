@@ -34,6 +34,7 @@ add_executable(xtr
     "${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp"
 )
 target_include_directories(xtr PRIVATE
+    "./include"
     ${SDL2_INCLUDE_DIRS}
     ${imgui_SOURCE_DIR}
     "${imgui_SOURCE_DIR}/backends"
@@ -45,8 +46,13 @@ target_link_libraries(xtr PRIVATE
 )
 
 file(GLOB texture_files "./data/textures/*")
-
 foreach(file ${texture_files})
+    file(RELATIVE_PATH file ${CMAKE_CURRENT_SOURCE_DIR} ${file})
+    configure_file(${file} ${file} COPYONLY)
+endforeach()
+
+file(GLOB shader_files "./data/shaders/*")
+foreach(file ${shader_files})
     file(RELATIVE_PATH file ${CMAKE_CURRENT_SOURCE_DIR} ${file})
     configure_file(${file} ${file} COPYONLY)
 endforeach()
