@@ -1,8 +1,9 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.19)
 project(xtr)
 
 include(FetchContent)
 set(FETCHCONTENT_QUIET NO)
+set(CMAKE_CXX_STANDARD 20)
 
 find_package(SDL2)
 if (NOT ${SDL2_FOUND})
