@@ -1,5 +1,6 @@
 .DS_Store
 .cache
+.vs
 out
 build
 compile_commands.json
