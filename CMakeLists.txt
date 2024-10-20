@@ -34,7 +34,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(imgui)
 
-add_executable(xtr
+add_executable(${PROJECT_NAME}
     "./xtr_main.cpp"
     "./src/xtr_app.cpp"
     "./external/glad/src/gl.c"
@@ -45,7 +45,7 @@ add_executable(xtr
     "${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp"
     "${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp"
 )
-target_include_directories(xtr PRIVATE
+target_include_directories(${PROJECT_NAME} PRIVATE
     "./include"
     ${SDL2_INCLUDE_DIRS}
     ${SDL2_image_INCLUDE_DIRS}
@@ -53,9 +53,9 @@ target_include_directories(xtr PRIVATE
     "${imgui_SOURCE_DIR}/backends"
     "./external/glad/include"
 )
-target_link_libraries(xtr PRIVATE
-    SDL2
-    SDL2_image
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    SDL2::SDL2
+    SDL2_image::SDL2_image
 )
 
 file(GLOB texture_files "./data/textures/*")
@@ -69,3 +69,19 @@ foreach(file ${shader_files})
     file(RELATIVE_PATH file ${CMAKE_CURRENT_SOURCE_DIR} ${file})
     configure_file(${file} ${file} COPYONLY)
 endforeach()
+
+if (WIN32)
+# copy the .dll file to the same folder as the executable
+add_custom_command(
+    TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    $<TARGET_FILE:SDL2::SDL2>
+    $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    VERBATIM)
+add_custom_command(
+    TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    $<TARGET_FILE:SDL2_image::SDL2_image>
+    $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    VERBATIM)
+endif()
