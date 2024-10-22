@@ -30,6 +30,7 @@ make
 - SDL2_image
 - GLAD
 - Dear ImGui
+- glm
 
 ## Resources
 - [SDL2 wiki](https://wiki.libsdl.org/SDL2/FrontPage)
