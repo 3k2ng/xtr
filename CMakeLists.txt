@@ -41,6 +41,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 
+FetchContent_Declare(
+    tinyobjloader
+    GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader
+    GIT_TAG 2945a967c5303b2c8c14174117c45f3302591150 # 2.0.0rc13
+)
+FetchContent_MakeAvailable(tinyobjloader)
+
 add_executable(${PROJECT_NAME}
     "./xtr_main.cpp"
     "./src/xtr_app.cpp"
@@ -57,8 +64,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${SDL2_INCLUDE_DIRS}
     ${SDL2_image_INCLUDE_DIRS}
     ${imgui_SOURCE_DIR}
-    ${glm_SOURCE_DIR}
     "${imgui_SOURCE_DIR}/backends"
+    ${glm_SOURCE_DIR}
+    ${tinyobjloader_SOURCE_DIR}
     "./external/glad/include"
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -68,6 +76,12 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
 file(GLOB texture_files "./data/textures/*")
 foreach(file ${texture_files})
+    file(RELATIVE_PATH file ${CMAKE_CURRENT_SOURCE_DIR} ${file})
+    configure_file(${file} ${file} COPYONLY)
+endforeach()
+
+file(GLOB model_files "./data/models/*")
+foreach(file ${model_files})
     file(RELATIVE_PATH file ${CMAKE_CURRENT_SOURCE_DIR} ${file})
     configure_file(${file} ${file} COPYONLY)
 endforeach()

@@ -1,6 +1,6 @@
 #include <xtr_app.h>
 #include <xtr_buffer.h>
-#include <xtr_mesh.h>
+#include <xtr_obj.h>
 #include <xtr_shader.h>
 #include <xtr_texture.h>
 

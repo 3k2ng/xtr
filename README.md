@@ -31,6 +31,7 @@ make
 - GLAD
 - Dear ImGui
 - glm
+- tinyobjloader
 
 ## Resources
 - [SDL2 wiki](https://wiki.libsdl.org/SDL2/FrontPage)

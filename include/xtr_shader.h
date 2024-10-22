@@ -4,14 +4,13 @@
 #include <glad/gl.h>
 #include <iostream>
 #include <sstream>
-#include <utility>
 
 namespace xtr {
 class Shader {
   public:
-    static Shader from_file(const std::filesystem::path &file,
+    static Shader from_file(const std::filesystem::path &file_path,
                             GLenum shader_type) {
-        std::ifstream ifs(file);
+        std::ifstream ifs(file_path);
         std::ostringstream oss;
         oss << ifs.rdbuf();
         Shader sh(shader_type);
