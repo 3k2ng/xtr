@@ -34,6 +34,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(imgui)
 
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm
+    GIT_TAG 0af55ccecd98d4e5a8d1fad7de25ba429d60e863 # 1.0.1
+)
+FetchContent_MakeAvailable(glm)
+
 add_executable(${PROJECT_NAME}
     "./xtr_main.cpp"
     "./src/xtr_app.cpp"
@@ -50,6 +57,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${SDL2_INCLUDE_DIRS}
     ${SDL2_image_INCLUDE_DIRS}
     ${imgui_SOURCE_DIR}
+    ${glm_SOURCE_DIR}
     "${imgui_SOURCE_DIR}/backends"
     "./external/glad/include"
 )
@@ -71,14 +79,14 @@ foreach(file ${shader_files})
 endforeach()
 
 if (WIN32)
-# copy the .dll file to the same folder as the executable
-add_custom_command(
+    # copy the .dll file to the same folder as the executable
+    add_custom_command(
     TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     $<TARGET_FILE:SDL2::SDL2>
     $<TARGET_FILE_DIR:${PROJECT_NAME}>
     VERBATIM)
-add_custom_command(
+    add_custom_command(
     TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     $<TARGET_FILE:SDL2_image::SDL2_image>

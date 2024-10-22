@@ -1,12 +1,13 @@
 #include <xtr_app.h>
 #include <xtr_buffer.h>
+#include <xtr_mesh.h>
 #include <xtr_shader.h>
 #include <xtr_texture.h>
 
 struct Vertex {
-    float x, y, z;
-    float r, g, b;
-    float u, v;
+    glm::vec3 pos;
+    glm::vec3 col;
+    glm::vec2 uv;
 };
 
 int main(int argc, char *argv[]) {
@@ -38,10 +39,10 @@ int main(int argc, char *argv[]) {
                  GL_UNSIGNED_BYTE, madoka->pixels);
 
     Vertex vertices[] = {
-        Vertex{0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f},
-        Vertex{0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f},
-        Vertex{-0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f},
-        Vertex{-0.5f, 0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f},
+        {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+        {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+        {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+        {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
     };
     unsigned int indices[] = {
         0, 1, 3, 1, 2, 3,
