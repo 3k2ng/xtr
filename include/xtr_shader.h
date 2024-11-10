@@ -85,9 +85,27 @@ class Program {
 
     inline void use() const { glUseProgram(_program); }
 
+    inline GLint loc(const std::string &name) const {
+        return glGetUniformLocation(_program, name.c_str());
+    }
+
     inline operator GLuint() const { return _program; }
 
   private:
     GLuint _program;
 };
+
+inline Program load_program(const std::filesystem::path &vert,
+                            const std::filesystem::path &frag) {
+    xtr::Program program{};
+    xtr::Shader vsh = xtr::Shader::from_file(vert, GL_VERTEX_SHADER);
+    vsh.log_compile_status();
+    xtr::Shader fsh = xtr::Shader::from_file(frag, GL_FRAGMENT_SHADER);
+    fsh.log_compile_status();
+    program.attach(vsh);
+    program.attach(fsh);
+    program.link();
+    program.log_link_status();
+    return program;
+}
 } // namespace xtr

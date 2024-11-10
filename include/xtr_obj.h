@@ -4,6 +4,7 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 #include <xtr_mesh.h>
+
 namespace xtr {
 inline Mesh load_obj_file(const std::filesystem::path &file_path) {
     tinyobj::ObjReader r;
@@ -11,7 +12,8 @@ inline Mesh load_obj_file(const std::filesystem::path &file_path) {
     const auto &attrib = r.GetAttrib();
     const auto &shapes = r.GetShapes();
     std::vector<Vertex> vertices;
-    std::vector<size_t> indices;
+    std::vector<int> indices;
+
     auto oidcmp = [](const tinyobj::index_t &lhs, const tinyobj::index_t &rhs) {
         return lhs.vertex_index < rhs.vertex_index ||
                (lhs.vertex_index == rhs.vertex_index &&
@@ -19,6 +21,7 @@ inline Mesh load_obj_file(const std::filesystem::path &file_path) {
                  (lhs.normal_index == rhs.normal_index &&
                   lhs.texcoord_index < rhs.texcoord_index)));
     };
+
     std::map<tinyobj::index_t, size_t, decltype(oidcmp)> oid2mid(
         oidcmp); // map obj index to mesh index
     for (size_t s = 0; s < shapes.size(); s++) {
@@ -51,8 +54,8 @@ inline Mesh load_obj_file(const std::filesystem::path &file_path) {
                             attrib
                                 .texcoords[2 * size_t(idx.texcoord_index) + 1];
                     }
-                    vertices.push_back({{vx, vy, vz}, vn, vt});
                     oid2mid[idx] = vertices.size();
+                    vertices.push_back({{vx, vy, vz}, vn, vt});
                 }
                 indices.push_back(oid2mid[idx]);
             }
