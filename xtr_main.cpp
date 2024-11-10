@@ -5,12 +5,6 @@
 #include <xtr_shader.h>
 #include <xtr_texture.h>
 
-struct Vertex {
-    glm::vec3 pos;
-    glm::vec3 col;
-    glm::vec2 uv;
-};
-
 int main(int argc, char *argv[]) {
     xtr::App app{};
     glEnable(GL_DEPTH_TEST);
@@ -45,24 +39,29 @@ int main(int argc, char *argv[]) {
 
     bool mouse_left_down = false;
 
+    ImGuiIO &io = ImGui::GetIO();
+
     while (app.is_running()) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL2_ProcessEvent(&event);
-            if (event.type == SDL_QUIT) {
-                app.quit();
-            } else if (event.type == SDL_MOUSEBUTTONDOWN &&
-                       event.button.button == SDL_BUTTON(SDL_BUTTON_LEFT)) {
-                mouse_left_down = true;
-            } else if (event.type == SDL_MOUSEBUTTONUP &&
-                       event.button.button == SDL_BUTTON(SDL_BUTTON_LEFT)) {
-                mouse_left_down = false;
-            } else if (event.type == SDL_MOUSEMOTION) {
-                if (mouse_left_down) {
-                    camera.set_phi(camera.get_phi() +
-                                   float(event.motion.xrel) * 1e-2f);
-                    camera.set_theta(camera.get_theta() +
-                                     float(event.motion.yrel) * 1e-2f);
+            if (!io.WantCaptureMouse &&
+                !(io.WantCaptureKeyboard && io.WantTextInput)) {
+                if (event.type == SDL_QUIT) {
+                    app.quit();
+                } else if (event.type == SDL_MOUSEBUTTONDOWN &&
+                           event.button.button == SDL_BUTTON(SDL_BUTTON_LEFT)) {
+                    mouse_left_down = true;
+                } else if (event.type == SDL_MOUSEBUTTONUP &&
+                           event.button.button == SDL_BUTTON(SDL_BUTTON_LEFT)) {
+                    mouse_left_down = false;
+                } else if (event.type == SDL_MOUSEMOTION) {
+                    if (mouse_left_down) {
+                        camera.set_phi(camera.get_phi() +
+                                       float(event.motion.xrel) * 1e-2f);
+                        camera.set_theta(camera.get_theta() +
+                                         float(event.motion.yrel) * 1e-2f);
+                    }
                 }
             }
         }
