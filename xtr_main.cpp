@@ -10,12 +10,14 @@ int main(int argc, char *argv[]) {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-    xtr::TurnTableCamera camera{10., glm::half_pi<float>(), 0., {}};
-    auto cube = xtr::load_mesh("./data/models/cube.obj", true);
+    xtr::TurnTableCamera camera{1000., glm::half_pi<float>(), 0., {}};
+    xtr::Mesh mesh = xtr::load_mesh("./data/models/Venus.ply", true);
     glm::mat4 model_matrix = glm::mat4{1.f};
 
     xtr::Program program = xtr::load_program("./data/shaders/basic.vert",
                                              "./data/shaders/basic.frag");
+
+    xtr::Texture texture = xtr::load_texture("./data/textures/fig-7b.ppm");
 
     xtr::Array array;
 
@@ -24,11 +26,11 @@ int main(int argc, char *argv[]) {
 
     array.bind();
     vertex_buffer.bind();
-    vertex_buffer.data(cube.vertices.size() * sizeof(xtr::Vertex),
-                       cube.vertices.data(), GL_STATIC_DRAW);
+    vertex_buffer.data(mesh.vertices.size() * sizeof(xtr::Vertex),
+                       mesh.vertices.data(), GL_STATIC_DRAW);
 
     element_buffer.bind();
-    element_buffer.data(cube.indices.size() * sizeof(int), cube.indices.data(),
+    element_buffer.data(mesh.indices.size() * sizeof(int), mesh.indices.data(),
                         GL_STATIC_DRAW);
 
     xtr::attrib_mesh(0, 1);
@@ -68,6 +70,7 @@ int main(int argc, char *argv[]) {
         app.start_frame();
 
         ImGui::Begin("panel");
+        camera.imgui();
         ImGui::End();
 
         ImGui::Render();
@@ -81,15 +84,12 @@ int main(int argc, char *argv[]) {
         const glm::mat4 projection_matrix =
             glm::perspective(glm::half_pi<float>(), 4.f / 3.f, 0.01f, 1e6f);
 
-        glUniformMatrix4fv(program.loc("uni_model"), 1, GL_FALSE,
-                           &model_matrix[0][0]);
-        glUniformMatrix4fv(program.loc("uni_view"), 1, GL_FALSE,
-                           &view_matrix[0][0]);
-        glUniformMatrix4fv(program.loc("uni_projection"), 1, GL_FALSE,
-                           &projection_matrix[0][0]);
+        program.uni_mat4(program.loc("uni_model"), model_matrix);
+        program.uni_mat4(program.loc("uni_view"), view_matrix);
+        program.uni_mat4(program.loc("uni_projection"), projection_matrix);
 
         array.bind();
-        glDrawElements(GL_TRIANGLES, GLuint(cube.indices.size()),
+        glDrawElements(GL_TRIANGLES, GLuint(mesh.indices.size()),
                        GL_UNSIGNED_INT, 0);
 
         app.end_frame();

@@ -1,4 +1,5 @@
 #pragma once
+#include "glm/fwd.hpp"
 #include <filesystem>
 #include <fstream>
 #include <glad/gl.h>
@@ -87,6 +88,67 @@ class Program {
 
     inline GLint loc(const std::string &name) const {
         return glGetUniformLocation(_program, name.c_str());
+    }
+
+    inline void uni_1f(const GLint loc, const GLfloat v0) const {
+        glUniform1f(loc, v0);
+    }
+
+    inline void uni_2f(const GLint loc, const GLfloat v0,
+                       const GLfloat v1) const {
+        glUniform2f(loc, v0, v1);
+    }
+
+    inline void uni_3f(const GLint loc, const GLfloat v0, const GLfloat v1,
+                       const GLfloat v2) const {
+        glUniform3f(loc, v0, v1, v2);
+    }
+
+    inline void uni_4f(const GLint loc, const GLfloat v0, const GLfloat v1,
+                       const GLfloat v2, const GLfloat v3) const {
+        glUniform4i(loc, v0, v1, v2, v3);
+    }
+
+    inline void uni_1i(const GLint loc, const GLint v0) const {
+        glUniform1i(loc, v0);
+    }
+
+    inline void uni_2i(const GLint loc, const GLint v0, const GLint v1) const {
+        glUniform2i(loc, v0, v1);
+    }
+
+    inline void uni_3i(const GLint loc, const GLint v0, const GLint v1,
+                       const GLint v2) const {
+        glUniform3i(loc, v0, v1, v2);
+    }
+
+    inline void uni_4i(const GLint loc, const GLint v0, const GLint v1,
+                       const GLint v2, const GLint v3) const {
+        glUniform4i(loc, v0, v1, v2, v3);
+    }
+
+    inline void uni_vec2(const GLint loc, const glm::vec2 &v) {
+        glUniform2fv(loc, 1, (float *)&v);
+    }
+
+    inline void uni_vec3(const GLint loc, const glm::vec3 &v) {
+        glUniform3fv(loc, 1, (float *)&v);
+    }
+
+    inline void uni_vec4(const GLint loc, const glm::vec4 &v) {
+        glUniform4fv(loc, 1, (float *)&v);
+    }
+
+    inline void uni_mat2(const GLint loc, const glm::mat2 &v) {
+        glUniformMatrix2fv(loc, 1, GL_FALSE, (float *)&v);
+    }
+
+    inline void uni_mat3(const GLint loc, const glm::mat3 &v) {
+        glUniformMatrix3fv(loc, 1, GL_FALSE, (float *)&v);
+    }
+
+    inline void uni_mat4(const GLint loc, const glm::mat4 &v) {
+        glUniformMatrix4fv(loc, 1, GL_FALSE, (float *)&v);
     }
 
     inline operator GLuint() const { return _program; }
