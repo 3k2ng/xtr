@@ -31,6 +31,8 @@ class Texture {
 inline Texture load_texture_from_surface(const SDL_Surface &surface,
                                          const bool is_repeat = false,
                                          const bool is_linear = false) {
+    SDL_Surface *rgba_surface = SDL_ConvertSurfaceFormat(
+        (SDL_Surface *)(&surface), SDL_PIXELFORMAT_RGBA32, 0);
     Texture texture{GL_TEXTURE_2D};
     glBindTexture(texture.target(), texture);
     glTexParameteri(texture.target(), GL_TEXTURE_WRAP_S,
@@ -41,8 +43,8 @@ inline Texture load_texture_from_surface(const SDL_Surface &surface,
                     is_linear ? GL_LINEAR : GL_NEAREST);
     glTexParameteri(texture.target(), GL_TEXTURE_MAG_FILTER,
                     is_linear ? GL_LINEAR : GL_NEAREST);
-    glTexImage2D(texture.target(), 0, GL_RGBA, surface.w, surface.h, 0, GL_RGBA,
-                 GL_UNSIGNED_BYTE, surface.pixels);
+    glTexImage2D(texture.target(), 0, GL_RGBA, rgba_surface->w, rgba_surface->h,
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba_surface->pixels);
     return texture;
 }
 
