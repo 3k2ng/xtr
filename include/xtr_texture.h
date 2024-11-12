@@ -48,10 +48,10 @@ inline Texture load_texture_from_surface(const SDL_Surface &surface,
     return texture;
 }
 
-inline Texture load_texture(const std::filesystem::path &file,
+inline Texture load_texture(const std::filesystem::path &file_path,
                             const bool is_repeat = false,
                             const bool is_linear = false) {
-    SDL_Surface *surface = IMG_Load(file.c_str());
+    SDL_Surface *surface = IMG_Load(file_path.c_str());
     Texture texture = load_texture_from_surface(*surface, is_repeat, is_linear);
     SDL_FreeSurface(surface);
     return texture;

@@ -8,14 +8,14 @@
 int main(int argc, char *argv[]) {
     xtr::App app{};
     glEnable(GL_DEPTH_TEST);
-    xtr::TurnTableCamera camera{5., glm::half_pi<float>(), 0., {}};
-    xtr::Mesh cube = xtr::load_obj_file("./data/models/cube.obj");
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    xtr::TurnTableCamera camera{10., glm::half_pi<float>(), 0., {}};
+    auto cube = xtr::load_mesh("./data/models/cube.obj", true);
     glm::mat4 model_matrix = glm::mat4{1.f};
 
     xtr::Program program = xtr::load_program("./data/shaders/basic.vert",
                                              "./data/shaders/basic.frag");
-
-    xtr::Texture texture = xtr::load_texture("./data/textures/madoka.png");
 
     xtr::Array array;
 
@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
     element_buffer.data(cube.indices.size() * sizeof(int), cube.indices.data(),
                         GL_STATIC_DRAW);
 
-    xtr::vertex_attrib_mesh(0, 1, 2);
+    xtr::attrib_mesh(0, 1);
 
     vertex_buffer.unbind();
 
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
 
         const glm::mat4 view_matrix = camera.view_matrix();
         const glm::mat4 projection_matrix =
-            glm::perspective(glm::half_pi<float>(), 4.f / 3.f, 0.01f, 1e3f);
+            glm::perspective(glm::half_pi<float>(), 4.f / 3.f, 0.01f, 1e6f);
 
         glUniformMatrix4fv(program.loc("uni_model"), 1, GL_FALSE,
                            &model_matrix[0][0]);

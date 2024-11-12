@@ -52,6 +52,7 @@ add_executable(${PROJECT_NAME}
     "./xtr_main.cpp"
     "./src/xtr_app.cpp"
     "./external/glad/src/gl.c"
+    "./external/miniply/src/miniply.cpp"
     "${imgui_SOURCE_DIR}/imgui.cpp"
     "${imgui_SOURCE_DIR}/imgui_draw.cpp"
     "${imgui_SOURCE_DIR}/imgui_tables.cpp"
@@ -68,6 +69,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${glm_SOURCE_DIR}
     ${tinyobjloader_SOURCE_DIR}
     "./external/glad/include"
+    "./external/miniply/include"
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE
     SDL2::SDL2

@@ -1,4 +1,5 @@
 #pragma once
+#include "miniply.h"
 #include <filesystem>
 #include <map>
 #define TINYOBJLOADER_IMPLEMENTATION
@@ -6,12 +7,13 @@
 #include <xtr_mesh.h>
 
 namespace xtr {
-inline Mesh load_obj_file(const std::filesystem::path &file_path) {
+inline std::pair<std::vector<glm::vec3>, std::vector<int>>
+load_obj_file(const std::filesystem::path &file_path) {
     tinyobj::ObjReader r;
     r.ParseFromFile(file_path);
     const auto &attrib = r.GetAttrib();
     const auto &shapes = r.GetShapes();
-    std::vector<Vertex> vertices;
+    std::vector<glm::vec3> vertices;
     std::vector<int> indices;
 
     auto oidcmp = [](const tinyobj::index_t &lhs, const tinyobj::index_t &rhs) {
@@ -37,25 +39,8 @@ inline Mesh load_obj_file(const std::filesystem::path &file_path) {
                         attrib.vertices[3 * size_t(idx.vertex_index) + 1];
                     tinyobj::real_t vz =
                         attrib.vertices[3 * size_t(idx.vertex_index) + 2];
-
-                    glm::vec3 vn{0., 0., 0.};
-                    if (idx.normal_index >= 0) {
-                        vn.x = attrib.normals[3 * size_t(idx.normal_index) + 0];
-                        vn.y = attrib.normals[3 * size_t(idx.normal_index) + 1];
-                        vn.z = attrib.normals[3 * size_t(idx.normal_index) + 2];
-                    }
-
-                    glm::vec2 vt{0., 0.};
-                    if (idx.texcoord_index >= 0) {
-                        vt.x =
-                            attrib
-                                .texcoords[2 * size_t(idx.texcoord_index) + 0];
-                        vt.y =
-                            attrib
-                                .texcoords[2 * size_t(idx.texcoord_index) + 1];
-                    }
                     oid2mid[idx] = vertices.size();
-                    vertices.push_back({{vx, vy, vz}, vn, vt});
+                    vertices.push_back({vx, vy, vz});
                 }
                 indices.push_back(oid2mid[idx]);
             }
@@ -63,5 +48,111 @@ inline Mesh load_obj_file(const std::filesystem::path &file_path) {
         }
     }
     return {vertices, indices};
+}
+
+inline std::pair<std::vector<glm::vec3>, std::vector<int>>
+load_ply_file(const std::filesystem::path &file_path) {
+    miniply::PLYReader r(file_path.c_str());
+    std::vector<glm::vec3> vertices;
+    std::vector<int> indices;
+    unsigned int element_indices[3];
+    bool vertices_loaded = false, faces_loaded = false;
+    while (r.has_element() && !(vertices_loaded && faces_loaded)) {
+        if (r.element_is(miniply::kPLYVertexElement) && r.load_element() &&
+            r.find_pos(element_indices)) {
+            vertices.resize(r.num_rows());
+            r.extract_properties(element_indices, 3,
+                                 miniply::PLYPropertyType::Float,
+                                 vertices.data());
+            vertices_loaded = true;
+        } else if (r.element_is(miniply::kPLYFaceElement) && r.load_element() &&
+                   r.find_indices(element_indices)) {
+            bool polys = r.requires_triangulation(element_indices[0]);
+            if (polys) {
+                indices.resize(r.num_triangles(element_indices[0]) * 3);
+                r.extract_triangles(element_indices[0],
+                                    (float *)vertices.data(), vertices.size(),
+                                    miniply::PLYPropertyType::Int,
+                                    indices.data());
+            } else {
+                indices.resize(r.num_triangles(element_indices[0]) * 3);
+                r.extract_list_property(element_indices[0],
+                                        miniply::PLYPropertyType::Int,
+                                        indices.data());
+            }
+            faces_loaded = true;
+        }
+        if (vertices_loaded && faces_loaded) {
+            break;
+        }
+        r.next_element();
+    }
+    return {vertices, indices};
+}
+
+inline Mesh load_mesh(const std::filesystem::path &file_path,
+                      const bool calculate_vertex_normal = false) {
+    std::string file_extension = file_path.filename().extension();
+    std::vector<glm::vec3> ps;
+    std::vector<int> i_p;
+    if (file_extension == ".obj") {
+        auto loaded_file = load_obj_file(file_path);
+        ps = loaded_file.first;
+        i_p = loaded_file.second;
+    } else if (file_extension == ".ply") {
+        auto loaded_file = load_ply_file(file_path);
+        ps = loaded_file.first;
+        i_p = loaded_file.second;
+    } else {
+        return {};
+    }
+    if (calculate_vertex_normal) {
+        std::vector<glm::vec3> vns(ps.size(), glm::vec3{});
+        for (int i = 0; i < i_p.size(); i += 3) {
+            glm::vec3 u = ps[i_p[i + 1]] - ps[i_p[i]],
+                      v = ps[i_p[i + 2]] - ps[i_p[i]];
+            glm::vec3 n = glm::cross(u, v);
+            vns[i_p[i]] += n;
+            vns[i_p[i + 1]] += n;
+            vns[i_p[i + 2]] += n;
+        }
+        std::vector<Vertex> vertices(ps.size());
+        for (int i = 0; i < ps.size(); ++i) {
+            vns[i] = glm::normalize(vns[i]);
+            vertices[i] = {ps[i], vns[i]};
+        }
+        return {vertices, i_p};
+    } else {
+        auto cmp = [](const glm::vec3 lhs, const glm::vec3 rhs) {
+            return lhs.x < rhs.x || (lhs.x == rhs.x && lhs.y < rhs.y) ||
+                   (lhs.x == rhs.x && lhs.y == rhs.y && lhs.z < rhs.z);
+        };
+        std::vector<glm::vec3> fns;
+        std::map<glm::vec3, int, decltype(cmp)> fn2id(cmp);
+        std::vector<int> i_fn(i_p.size());
+        for (int i = 0; i < i_fn.size(); i += 3) {
+            glm::vec3 u = ps[i_p[i + 1]] - ps[i_p[i]],
+                      v = ps[i_p[i + 2]] - ps[i_p[i]];
+            glm::vec3 fn = glm::normalize(glm::cross(u, v));
+            if (fn2id.find(fn) == fn2id.end()) {
+                fn2id[fn] = fns.size();
+                fns.push_back(fn);
+            }
+            i_fn[i] = fn2id[fn];
+            i_fn[i + 1] = fn2id[fn];
+            i_fn[i + 2] = fn2id[fn];
+        }
+        std::vector<Vertex> vertices;
+        std::vector<int> indices(i_p.size());
+        std::map<std::pair<int, int>, int> i2i;
+        for (int i = 0; i < indices.size(); ++i) {
+            if (i2i.find({i_p[i], i_fn[i]}) == i2i.end()) {
+                i2i[{i_p[i], i_fn[i]}] = vertices.size();
+                vertices.push_back({ps[i_p[i]], fns[i_fn[i]]});
+            }
+            indices[i] = i2i[{i_p[i], i_fn[i]}];
+        }
+        return {vertices, indices};
+    }
 }
 } // namespace xtr
