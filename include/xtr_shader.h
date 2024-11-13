@@ -1,8 +1,8 @@
 #pragma once
-#include "glm/fwd.hpp"
 #include <filesystem>
 #include <fstream>
 #include <glad/gl.h>
+#include <glm/glm.hpp>
 #include <iostream>
 #include <sstream>
 
@@ -127,27 +127,27 @@ class Program {
         glUniform4i(loc, v0, v1, v2, v3);
     }
 
-    inline void uni_vec2(const GLint loc, const glm::vec2 &v) {
+    inline void uni_vec2(const GLint loc, const glm::vec2 &v) const {
         glUniform2fv(loc, 1, (float *)&v);
     }
 
-    inline void uni_vec3(const GLint loc, const glm::vec3 &v) {
+    inline void uni_vec3(const GLint loc, const glm::vec3 &v) const {
         glUniform3fv(loc, 1, (float *)&v);
     }
 
-    inline void uni_vec4(const GLint loc, const glm::vec4 &v) {
+    inline void uni_vec4(const GLint loc, const glm::vec4 &v) const {
         glUniform4fv(loc, 1, (float *)&v);
     }
 
-    inline void uni_mat2(const GLint loc, const glm::mat2 &v) {
+    inline void uni_mat2(const GLint loc, const glm::mat2 &v) const {
         glUniformMatrix2fv(loc, 1, GL_FALSE, (float *)&v);
     }
 
-    inline void uni_mat3(const GLint loc, const glm::mat3 &v) {
+    inline void uni_mat3(const GLint loc, const glm::mat3 &v) const {
         glUniformMatrix3fv(loc, 1, GL_FALSE, (float *)&v);
     }
 
-    inline void uni_mat4(const GLint loc, const glm::mat4 &v) {
+    inline void uni_mat4(const GLint loc, const glm::mat4 &v) const {
         glUniformMatrix4fv(loc, 1, GL_FALSE, (float *)&v);
     }
 

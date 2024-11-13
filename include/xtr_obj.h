@@ -1,7 +1,7 @@
 #pragma once
-#include "miniply.h"
 #include <filesystem>
 #include <map>
+#include <miniply.h>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 #include <xtr_mesh.h>

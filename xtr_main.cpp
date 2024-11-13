@@ -1,7 +1,10 @@
 #include <xtr_app.h>
 #include <xtr_buffer.h>
 #include <xtr_camera.h>
+#include <xtr_framebuffer.h>
+#include <xtr_mesh_pass.h>
 #include <xtr_obj.h>
+#include <xtr_screen_pass.h>
 #include <xtr_shader.h>
 #include <xtr_texture.h>
 
@@ -10,87 +13,40 @@ int main(int argc, char *argv[]) {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-    xtr::TurnTableCamera camera{1000., glm::half_pi<float>(), 0., {}};
-    xtr::Mesh mesh = xtr::load_mesh("./data/models/Venus.ply", true);
-    glm::mat4 model_matrix = glm::mat4{1.f};
-
-    xtr::Program program = xtr::load_program("./data/shaders/basic.vert",
-                                             "./data/shaders/basic.frag");
+    xtr::ScreenPass screen_pass{"./data/shaders/screen.frag"};
+    xtr::MeshPass mesh_pass{"./data/shaders/basic.frag"};
+    xtr::TurnTableCamera camera{1000.f, glm::half_pi<float>(), 0., {}};
+    glm::mat4 model_matrix{1.};
+    glm::mat4 projection_matrix =
+        glm::perspective(glm::half_pi<float>(), 4.f / 3.f, 1e-3f, 1e4f);
 
     xtr::Texture texture = xtr::load_texture("./data/textures/fig-7b.ppm");
 
-    xtr::Array array;
+    mesh_pass.upload_mesh(xtr::load_mesh("./data/models/Venus.ply"));
 
-    xtr::Buffer vertex_buffer{GL_ARRAY_BUFFER},
-        element_buffer{GL_ELEMENT_ARRAY_BUFFER};
-
-    array.bind();
-    vertex_buffer.bind();
-    vertex_buffer.data(mesh.vertices.size() * sizeof(xtr::Vertex),
-                       mesh.vertices.data(), GL_STATIC_DRAW);
-
-    element_buffer.bind();
-    element_buffer.data(mesh.indices.size() * sizeof(int), mesh.indices.data(),
-                        GL_STATIC_DRAW);
-
-    xtr::attrib_mesh(0, 1);
-
-    vertex_buffer.unbind();
-
-    array.unbind();
-
-    bool mouse_left_down = false;
-
-    ImGuiIO &io = ImGui::GetIO();
-
+    app.enable_imgui = false;
     while (app.is_running()) {
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            ImGui_ImplSDL2_ProcessEvent(&event);
-            if (!io.WantCaptureMouse &&
-                !(io.WantCaptureKeyboard && io.WantTextInput)) {
-                if (event.type == SDL_QUIT) {
-                    app.quit();
-                } else if (event.type == SDL_MOUSEBUTTONDOWN &&
-                           event.button.button == SDL_BUTTON(SDL_BUTTON_LEFT)) {
-                    mouse_left_down = true;
-                } else if (event.type == SDL_MOUSEBUTTONUP &&
-                           event.button.button == SDL_BUTTON(SDL_BUTTON_LEFT)) {
-                    mouse_left_down = false;
-                } else if (event.type == SDL_MOUSEMOTION) {
-                    if (mouse_left_down) {
-                        camera.set_phi(camera.get_phi() +
-                                       float(event.motion.xrel) * 1e-2f);
-                        camera.set_theta(camera.get_theta() +
-                                         float(event.motion.yrel) * 1e-2f);
-                    }
-                }
-            }
+        app.update_input();
+        if (app.is_button_down(SDL_BUTTON_LEFT)) {
+            camera.set_phi(camera.get_phi() + app.get_mouse_delta().x * 1e2f);
+            camera.set_theta(camera.get_theta() +
+                             app.get_mouse_delta().y * 1e2f);
         }
+        camera.set_r(camera.get_r() - app.get_wheel_delta().y * 1e2f);
+
         app.start_frame();
+        if (app.enable_imgui) {
+            ImGui::Begin("panel");
+            camera.imgui();
+            ImGui::End();
+            ImGui::Render();
+        }
 
-        ImGui::Begin("panel");
-        camera.imgui();
-        ImGui::End();
-
-        ImGui::Render();
-        glViewport(0, 0, 800, 600);
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glViewport(0, 0, app.get_screen_width(), app.get_screen_height());
+        glClearColor(0.f, 0.f, 0.f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        program.use();
-
-        const glm::mat4 view_matrix = camera.view_matrix();
-        const glm::mat4 projection_matrix =
-            glm::perspective(glm::half_pi<float>(), 4.f / 3.f, 0.01f, 1e6f);
-
-        program.uni_mat4(program.loc("uni_model"), model_matrix);
-        program.uni_mat4(program.loc("uni_view"), view_matrix);
-        program.uni_mat4(program.loc("uni_projection"), projection_matrix);
-
-        array.bind();
-        glDrawElements(GL_TRIANGLES, GLuint(mesh.indices.size()),
-                       GL_UNSIGNED_INT, 0);
+        mesh_pass.draw(model_matrix, camera.view_matrix(), projection_matrix);
 
         app.end_frame();
     }
