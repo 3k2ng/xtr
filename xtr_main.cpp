@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
     glCullFace(GL_BACK);
     xtr::ScreenPass screen_pass{"./data/shaders/screen_loa.frag"};
     xtr::MeshPass mesh_pass{"./data/shaders/buffer_pass.frag"};
-    xtr::TurnTableCamera camera{1000.f, glm::half_pi<float>(), 0., {}};
+    xtr::TurnTableCamera camera{1000.f, 11.f / 24.f * glm::pi<float>(), 0., {}};
     glm::mat4 model_matrix{1.};
     glm::mat4 projection_matrix =
         glm::perspective(glm::half_pi<float>(), 4.f / 3.f, 1e-3f, 1e4f);

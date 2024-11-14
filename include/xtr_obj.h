@@ -91,21 +91,42 @@ load_ply_file(const std::filesystem::path &file_path) {
 }
 
 inline Mesh load_mesh(const std::filesystem::path &file_path,
-                      const bool calculate_vertex_normal = false) {
+                      const bool calculate_vertex_normal,
+                      const bool y_up = true, const bool x_front = true) {
     std::string file_extension = file_path.filename().extension();
+    std::pair<std::vector<glm::vec3>, std::vector<int>> loaded_file;
     std::vector<glm::vec3> ps;
     std::vector<int> i_p;
     if (file_extension == ".obj") {
-        auto loaded_file = load_obj_file(file_path);
-        ps = loaded_file.first;
-        i_p = loaded_file.second;
+        loaded_file = load_obj_file(file_path);
     } else if (file_extension == ".ply") {
-        auto loaded_file = load_ply_file(file_path);
-        ps = loaded_file.first;
-        i_p = loaded_file.second;
+        loaded_file = load_ply_file(file_path);
     } else {
         return {};
     }
+    ps.resize(loaded_file.first.size());
+    for (int i = 0; i < ps.size(); ++i) {
+        if (y_up) {
+            ps[i].y = loaded_file.first[i].y;
+            if (x_front) {
+                ps[i].x = loaded_file.first[i].x;
+                ps[i].z = loaded_file.first[i].z;
+            } else {
+                ps[i].x = loaded_file.first[i].z;
+                ps[i].z = loaded_file.first[i].x;
+            }
+        } else {
+            ps[i].y = loaded_file.first[i].z;
+            if (x_front) {
+                ps[i].x = loaded_file.first[i].x;
+                ps[i].z = loaded_file.first[i].y;
+            } else {
+                ps[i].x = loaded_file.first[i].y;
+                ps[i].z = loaded_file.first[i].x;
+            }
+        }
+    }
+    i_p = loaded_file.second;
     if (calculate_vertex_normal) {
         std::vector<glm::vec3> vns(ps.size(), glm::vec3{});
         for (int i = 0; i < i_p.size(); i += 3) {

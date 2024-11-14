@@ -10,23 +10,23 @@ class TurnTableCamera {
           _origin{origin} {}
 
     inline glm::mat4 view_matrix() const {
-        return glm::lookAt(get_position(), _origin, {0., 0., 1.});
+        return glm::lookAt(get_position(), _origin, {0., 1., 0.});
     }
 
     inline glm::vec3 get_position() const {
         return _origin + _radial_distance *
                              glm::vec3{
                                  sinf(_polar_angle) * cosf(_azimuthal_angle),
-                                 sinf(_polar_angle) * sinf(_azimuthal_angle),
                                  cosf(_polar_angle),
+                                 sinf(_polar_angle) * sinf(_azimuthal_angle),
                              };
     }
 
     inline glm::vec3 get_direction() const {
         return -1.f * glm::vec3{
                           sinf(_polar_angle) * cosf(_azimuthal_angle),
-                          sinf(_polar_angle) * sinf(_azimuthal_angle),
                           cosf(_polar_angle),
+                          sinf(_polar_angle) * sinf(_azimuthal_angle),
                       };
     }
 
