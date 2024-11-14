@@ -7,7 +7,21 @@
 namespace xtr {
 class Texture {
   public:
-    Texture(GLenum target) : _target{target} { glGenTextures(1, &_texture); }
+    Texture(GLenum target, const bool is_repeat = false,
+            const bool is_linear = false)
+        : _target{target} {
+        glGenTextures(1, &_texture);
+        bind();
+        glTexParameteri(_target, GL_TEXTURE_WRAP_S,
+                        is_repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+        glTexParameteri(_target, GL_TEXTURE_WRAP_T,
+                        is_repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+        glTexParameteri(_target, GL_TEXTURE_MIN_FILTER,
+                        is_linear ? GL_LINEAR : GL_NEAREST);
+        glTexParameteri(_target, GL_TEXTURE_MAG_FILTER,
+                        is_linear ? GL_LINEAR : GL_NEAREST);
+        unbind();
+    }
     Texture(Texture &&o) : _texture{o._texture} {};
     Texture(const Texture &) = delete;
     Texture &operator=(Texture &&o) {
@@ -33,18 +47,11 @@ inline Texture load_texture_from_surface(const SDL_Surface &surface,
                                          const bool is_linear = false) {
     SDL_Surface *rgba_surface = SDL_ConvertSurfaceFormat(
         (SDL_Surface *)(&surface), SDL_PIXELFORMAT_RGBA32, 0);
-    Texture texture{GL_TEXTURE_2D};
-    glBindTexture(texture.target(), texture);
-    glTexParameteri(texture.target(), GL_TEXTURE_WRAP_S,
-                    is_repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-    glTexParameteri(texture.target(), GL_TEXTURE_WRAP_T,
-                    is_repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-    glTexParameteri(texture.target(), GL_TEXTURE_MIN_FILTER,
-                    is_linear ? GL_LINEAR : GL_NEAREST);
-    glTexParameteri(texture.target(), GL_TEXTURE_MAG_FILTER,
-                    is_linear ? GL_LINEAR : GL_NEAREST);
+    Texture texture{GL_TEXTURE_2D, is_repeat, is_linear};
+    texture.bind();
     glTexImage2D(texture.target(), 0, GL_RGBA, rgba_surface->w, rgba_surface->h,
                  0, GL_RGBA, GL_UNSIGNED_BYTE, rgba_surface->pixels);
+    texture.unbind();
     return texture;
 }
 

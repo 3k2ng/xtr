@@ -8,21 +8,43 @@
 #include <xtr_shader.h>
 #include <xtr_texture.h>
 
+constexpr int mini(const int x, const int y) { return x < y ? x : y; }
+constexpr int maxi(const int x, const int y) { return x > y ? x : y; }
+
 int main(int argc, char *argv[]) {
-    xtr::App app{};
+    xtr::App app{800, 600};
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-    xtr::ScreenPass screen_pass{"./data/shaders/screen.frag"};
-    xtr::MeshPass mesh_pass{"./data/shaders/basic.frag"};
+    xtr::ScreenPass screen_pass{"./data/shaders/screen_loa.frag"};
+    xtr::MeshPass mesh_pass{"./data/shaders/buffer_pass.frag"};
     xtr::TurnTableCamera camera{1000.f, glm::half_pi<float>(), 0., {}};
     glm::mat4 model_matrix{1.};
     glm::mat4 projection_matrix =
         glm::perspective(glm::half_pi<float>(), 4.f / 3.f, 1e-3f, 1e4f);
 
-    xtr::Texture texture = xtr::load_texture("./data/textures/fig-7b.ppm");
+    mesh_pass.upload_mesh(xtr::load_mesh("./data/models/Terrain.ply", true));
 
-    mesh_pass.upload_mesh(xtr::load_mesh("./data/models/Venus.ply"));
+    xtr::Framebuffer framebuffer;
+    xtr::Texture z_buffer_texture{GL_TEXTURE_2D};
+    z_buffer_texture.bind();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, app.get_screen_width(),
+                 app.get_screen_height(), 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 nullptr);
+    z_buffer_texture.unbind();
+
+    xtr::Renderbuffer renderbuffer;
+    renderbuffer.bind();
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT,
+                          app.get_screen_width(), app.get_screen_height());
+    renderbuffer.unbind();
+
+    framebuffer.bind();
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           z_buffer_texture, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                              GL_RENDERBUFFER, renderbuffer);
+    framebuffer.unbind();
 
     app.enable_imgui = false;
     while (app.is_running()) {
@@ -43,10 +65,44 @@ int main(int argc, char *argv[]) {
         }
 
         glViewport(0, 0, app.get_screen_width(), app.get_screen_height());
+        framebuffer.bind();
         glClearColor(0.f, 0.f, 0.f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+        const xtr::Program &mesh_pass_program = mesh_pass.get_program();
+        mesh_pass_program.use();
+        mesh_pass_program.uni_1i(mesh_pass_program.loc("uni_dof"), false);
+        mesh_pass_program.uni_vec3(mesh_pass_program.loc("uni_camera_pos"),
+                                   camera.get_position());
+        mesh_pass_program.uni_vec3(mesh_pass_program.loc("uni_camera_dir"),
+                                   camera.get_direction());
         mesh_pass.draw(model_matrix, camera.view_matrix(), projection_matrix);
+
+        glReadBuffer(GL_COLOR_ATTACHMENT0);
+        std::vector<glm::vec4> z_buffer(app.get_screen_width() *
+                                        app.get_screen_height());
+        glReadPixels(0, 0, app.get_screen_width(), app.get_screen_height(),
+                     GL_RGBA, GL_FLOAT, z_buffer.data());
+        framebuffer.unbind();
+
+        float z_max = 0.f, z_min = 1e32f;
+        for (const auto &pixel : z_buffer) {
+            if (pixel.x > 0) {
+                if (pixel.x > z_max) {
+                    z_max = pixel.x;
+                }
+                if (pixel.x < z_min) {
+                    z_min = pixel.x;
+                }
+            }
+        }
+
+        z_buffer_texture.bind();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        const xtr::Program &screen_pass_program = screen_pass.get_program();
+        screen_pass_program.use();
+        screen_pass_program.uni_1f(screen_pass_program.loc("uni_z_min"), z_min);
+        screen_pass_program.uni_1f(screen_pass_program.loc("uni_z_max"), z_max);
+        screen_pass.draw();
 
         app.end_frame();
     }

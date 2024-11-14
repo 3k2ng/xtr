@@ -1,6 +1,6 @@
 #include <xtr_app.h>
 namespace xtr {
-App::App() : _running{true}, enable_imgui{false} {
+App::App(int width, int height) : _running{true}, enable_imgui{false} {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
     IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG);
 
@@ -10,11 +10,11 @@ App::App() : _running{true}, enable_imgui{false} {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
                         SDL_GL_CONTEXT_PROFILE_CORE);
 
-    _window =
-        SDL_CreateWindow("XToon Renderer", SDL_WINDOWPOS_UNDEFINED,
-                         SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_OPENGL);
-    _screen_width = 800;
-    _screen_height = 600;
+    _window = SDL_CreateWindow("XToon Renderer", SDL_WINDOWPOS_UNDEFINED,
+                               SDL_WINDOWPOS_UNDEFINED, width, height,
+                               SDL_WINDOW_OPENGL);
+    _screen_width = width;
+    _screen_height = height;
 
     _context = SDL_GL_CreateContext(_window);
     gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress);

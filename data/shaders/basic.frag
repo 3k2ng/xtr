@@ -7,8 +7,6 @@ in vec3 frag_normal;
 uniform vec3 uni_camera_pos;
 uniform vec3 uni_camera_dir;
 
-uniform sampler2D uni_texture;
-
 void main()
 {
     frag_color = vec4(0.5 * frag_normal + vec3(0.5), 1.);

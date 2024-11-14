@@ -25,4 +25,27 @@ class Framebuffer {
   private:
     GLuint _framebuffer;
 };
+class Renderbuffer {
+  public:
+    static void unbind() { glBindRenderbuffer(GL_RENDERBUFFER, 0); }
+
+    Renderbuffer() { glGenRenderbuffers(1, &_renderbuffer); }
+    Renderbuffer(Renderbuffer &&o) : _renderbuffer{o._renderbuffer} {};
+    Renderbuffer(const Renderbuffer &) = delete;
+    Renderbuffer &operator=(Renderbuffer &&o) {
+        _renderbuffer = o._renderbuffer;
+        return *this;
+    };
+    Renderbuffer &operator=(const Renderbuffer &) = delete;
+    ~Renderbuffer() { glDeleteRenderbuffers(1, &_renderbuffer); }
+
+    inline void bind() const {
+        glBindRenderbuffer(GL_RENDERBUFFER, _renderbuffer);
+    }
+
+    inline operator GLuint() const { return _renderbuffer; }
+
+  private:
+    GLuint _renderbuffer;
+};
 } // namespace xtr

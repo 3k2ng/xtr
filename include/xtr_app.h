@@ -10,7 +10,7 @@
 namespace xtr {
 class App {
   public:
-    App();
+    App(int width, int height);
     App(App &&) = delete;
     App(const App &) = delete;
     App &operator=(App &&) = delete;

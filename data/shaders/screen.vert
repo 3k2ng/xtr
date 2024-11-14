@@ -10,5 +10,5 @@ out vec2 uv;
 void main()
 {
     gl_Position = vec4(positions[gl_VertexID], 0., 1.);
-    uv = positions[gl_VertexID];
+    uv = 0.5 * positions[gl_VertexID] + vec2(0.5);
 }

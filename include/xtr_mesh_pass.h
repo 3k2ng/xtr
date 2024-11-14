@@ -35,6 +35,8 @@ class MeshPass {
         _array.unbind();
     }
 
+    inline const xtr::Program &get_program() const { return _program; }
+
   private:
     xtr::Program _program;
     xtr::Array _array;
