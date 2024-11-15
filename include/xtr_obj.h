@@ -105,6 +105,19 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
         return {};
     }
     ps.resize(loaded_file.first.size());
+
+    glm::vec3 bb_lowest  = loaded_file.first[0];
+    glm::vec3 bb_highest = loaded_file.first[0];
+    for (int i = 1; i < ps.size(); ++i) {
+        bb_highest.x = std::max(bb_highest.x, loaded_file.first[i].x);
+        bb_highest.y = std::max(bb_highest.y, loaded_file.first[i].y);
+        bb_highest.z = std::max(bb_highest.z, loaded_file.first[i].z);
+        bb_lowest.x = std::min(bb_lowest.x, loaded_file.first[i].x);
+        bb_lowest.y = std::min(bb_lowest.y, loaded_file.first[i].y);
+        bb_lowest.z = std::min(bb_lowest.z, loaded_file.first[i].z);
+    }
+    glm::vec3 bb_center = (bb_highest - bb_lowest) / glm::vec3(2.0);
+    
     for (int i = 0; i < ps.size(); ++i) {
         if (y_up) {
             ps[i].y = loaded_file.first[i].y;
@@ -140,7 +153,7 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
         std::vector<Vertex> vertices(ps.size());
         for (int i = 0; i < ps.size(); ++i) {
             vns[i] = glm::normalize(vns[i]);
-            vertices[i] = {ps[i], vns[i]};
+            vertices[i] = {.position=ps[i]-bb_center, .normal=vns[i]};
         }
         return {vertices, i_p};
     } else {
