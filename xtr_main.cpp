@@ -23,15 +23,26 @@ int main(int argc, char *argv[]) {
     glm::mat4 projection_matrix =
         glm::perspective(glm::half_pi<float>(), 4.f / 3.f, 1e-3f, 1e4f);
 
-    mesh_pass.upload_mesh(xtr::load_mesh("./data/models/Terrain.ply", true));
+    mesh_pass.upload_mesh(xtr::load_mesh("./data/models/Venus.ply", true));
 
     xtr::Framebuffer framebuffer;
+
     xtr::Texture z_buffer_texture{GL_TEXTURE_2D};
     z_buffer_texture.bind();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, app.get_screen_width(),
                  app.get_screen_height(), 0, GL_RGBA, GL_UNSIGNED_BYTE,
                  nullptr);
     z_buffer_texture.unbind();
+
+    xtr::Texture obam_texture{GL_TEXTURE_2D};
+    obam_texture.bind();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, app.get_screen_width(),
+                 app.get_screen_height(), 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 nullptr);
+    obam_texture.unbind();
+
+    xtr::Texture tonemap_texture =
+        xtr::load_texture("./data/textures/fig-7b.ppm");
 
     xtr::Renderbuffer renderbuffer;
     renderbuffer.bind();
@@ -42,11 +53,18 @@ int main(int argc, char *argv[]) {
     framebuffer.bind();
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                            z_buffer_texture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+                           obam_texture, 0);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                               GL_RENDERBUFFER, renderbuffer);
+    unsigned int attachments[2] = {
+        GL_COLOR_ATTACHMENT0,
+        GL_COLOR_ATTACHMENT1,
+    };
+    glDrawBuffers(2, attachments);
     framebuffer.unbind();
 
-    app.enable_imgui = false;
+    app.enable_imgui = true;
     while (app.is_running()) {
         app.update_input();
         if (app.is_button_down(SDL_BUTTON_LEFT)) {
@@ -96,12 +114,21 @@ int main(int argc, char *argv[]) {
             }
         }
 
+        glActiveTexture(GL_TEXTURE0);
         z_buffer_texture.bind();
+        glActiveTexture(GL_TEXTURE1);
+        obam_texture.bind();
+        glActiveTexture(GL_TEXTURE2);
+        tonemap_texture.bind();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         const xtr::Program &screen_pass_program = screen_pass.get_program();
         screen_pass_program.use();
         screen_pass_program.uni_1f(screen_pass_program.loc("uni_z_min"), z_min);
         screen_pass_program.uni_1f(screen_pass_program.loc("uni_z_max"), z_max);
+
+        screen_pass_program.uni_1i(screen_pass_program.loc("uni_z_buffer"), 0);
+        screen_pass_program.uni_1i(screen_pass_program.loc("uni_obam"), 1);
+        screen_pass_program.uni_1i(screen_pass_program.loc("uni_tonemap"), 2);
         screen_pass.draw();
 
         app.end_frame();
