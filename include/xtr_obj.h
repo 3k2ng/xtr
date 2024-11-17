@@ -116,7 +116,7 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
         bb_lowest.y = std::min(bb_lowest.y, loaded_file.first[i].y);
         bb_lowest.z = std::min(bb_lowest.z, loaded_file.first[i].z);
     }
-    glm::vec3 bb_center = (bb_highest - bb_lowest) / glm::vec3(2.0);
+    glm::vec3 bb_center = (bb_highest + bb_lowest) / glm::vec3(2.0);
     
     for (int i = 0; i < ps.size(); ++i) {
         if (y_up) {
