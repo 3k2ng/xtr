@@ -1,6 +1,6 @@
 #pragma once
-#include "imgui.h"
 #include <glm/ext.hpp>
+#include <imgui.h>
 
 namespace xtr {
 class TurnTableCamera {

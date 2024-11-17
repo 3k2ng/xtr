@@ -1,5 +1,3 @@
-#include "SDL_keycode.h"
-#include "imgui.h"
 #include <xtr_app.h>
 #include <xtr_buffer.h>
 #include <xtr_camera.h>
@@ -26,7 +24,8 @@ int main(int argc, char *argv[]) {
         glm::perspective(glm::half_pi<float>(), 4.f / 3.f, 1e-3f, 1e4f);
 
     if (argc > 1) {
-        mesh_pass.upload_mesh(xtr::load_mesh(std::string("./data/models/")+argv[1]+".ply", true));
+        mesh_pass.upload_mesh(xtr::load_mesh(
+            std::string("./data/models/") + argv[1] + ".ply", true));
     } else {
         mesh_pass.upload_mesh(xtr::load_mesh("./data/models/Venus.ply", true));
     }
@@ -84,8 +83,7 @@ int main(int argc, char *argv[]) {
         const glm::vec3 origin_delta = {
             app.is_key_down(SDLK_RIGHT) - app.is_key_down(SDLK_LEFT),
             app.is_key_down(SDLK_UP) - app.is_key_down(SDLK_DOWN),
-            app.is_key_down(SDLK_PERIOD) - app.is_key_down(SDLK_COMMA)
-        };
+            app.is_key_down(SDLK_PERIOD) - app.is_key_down(SDLK_COMMA)};
         camera.update_origin(origin_delta);
 
         app.start_frame();
@@ -95,7 +93,9 @@ int main(int argc, char *argv[]) {
             ImGui::Separator();
             ImGui::InputTextWithHint("Mesh Name", "Venus", imgui_mesh_name, 50);
             if (ImGui::Button("Load Mesh")) {
-                mesh_pass.upload_mesh(xtr::load_mesh(std::string("./data/models/")+imgui_mesh_name+".ply", true));
+                mesh_pass.upload_mesh(xtr::load_mesh(
+                    std::string("./data/models/") + imgui_mesh_name + ".ply",
+                    true));
             }
             ImGui::End();
             ImGui::Render();
@@ -122,13 +122,13 @@ int main(int argc, char *argv[]) {
         framebuffer.unbind();
 
         float z_max = 0.f, z_min = 1e32f;
-        z_max = 1e4f, z_min = 1e2f;
-        // for (const auto &pixel : z_buffer) {
-        //     if (pixel.x > 0) {
-        //         z_max = std::max(pixel.x, z_max);
-        //         z_min = std::min(pixel.x, z_min);
-        //     }
-        // }
+        /*z_max = 1e4f, z_min = 1e2f;*/
+        for (const auto &pixel : z_buffer) {
+            if (pixel.x > 0) {
+                z_max = std::max(pixel.x, z_max);
+                z_min = std::min(pixel.x, z_min);
+            }
+        }
 
         glActiveTexture(GL_TEXTURE0);
         z_buffer_texture.bind();
