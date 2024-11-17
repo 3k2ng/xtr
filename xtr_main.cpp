@@ -23,7 +23,11 @@ int main(int argc, char *argv[]) {
     glm::mat4 projection_matrix =
         glm::perspective(glm::half_pi<float>(), 4.f / 3.f, 1e-3f, 1e4f);
 
-    mesh_pass.upload_mesh(xtr::load_mesh("./data/models/Venus.ply", true));
+    if (argc > 1) {
+        mesh_pass.upload_mesh(xtr::load_mesh(std::string("./data/models/")+argv[1]+".ply", true));
+    } else {
+        mesh_pass.upload_mesh(xtr::load_mesh("./data/models/Venus.ply", true));
+    }
 
     xtr::Framebuffer framebuffer;
 
@@ -105,12 +109,8 @@ int main(int argc, char *argv[]) {
         float z_max = 0.f, z_min = 1e32f;
         for (const auto &pixel : z_buffer) {
             if (pixel.x > 0) {
-                if (pixel.x > z_max) {
-                    z_max = pixel.x;
-                }
-                if (pixel.x < z_min) {
-                    z_min = pixel.x;
-                }
+                z_max = std::max(pixel.x, z_max);
+                z_min = std::min(pixel.x, z_min);
             }
         }
 

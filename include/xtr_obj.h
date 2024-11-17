@@ -117,25 +117,27 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
         bb_lowest.z = std::min(bb_lowest.z, loaded_file.first[i].z);
     }
     glm::vec3 bb_center = (bb_highest + bb_lowest) / glm::vec3(2.0);
+    float bb_diag_size = glm::length(bb_highest - bb_lowest);
+    float bb_scalar = 1000.f / bb_diag_size;
     
     for (int i = 0; i < ps.size(); ++i) {
         if (y_up) {
-            ps[i].y = loaded_file.first[i].y;
+            ps[i].y = loaded_file.first[i].y-bb_center.y;
             if (x_front) {
-                ps[i].x = loaded_file.first[i].x;
-                ps[i].z = loaded_file.first[i].z;
+                ps[i].x = loaded_file.first[i].x-bb_center.x;
+                ps[i].z = loaded_file.first[i].z-bb_center.z;
             } else {
-                ps[i].x = loaded_file.first[i].z;
-                ps[i].z = loaded_file.first[i].x;
+                ps[i].x = loaded_file.first[i].z-bb_center.z;
+                ps[i].z = loaded_file.first[i].x-bb_center.x;
             }
         } else {
-            ps[i].y = loaded_file.first[i].z;
+            ps[i].y = loaded_file.first[i].z-bb_center.z;
             if (x_front) {
-                ps[i].x = loaded_file.first[i].x;
-                ps[i].z = loaded_file.first[i].y;
+                ps[i].x = loaded_file.first[i].x-bb_center.x;
+                ps[i].z = loaded_file.first[i].y-bb_center.y;
             } else {
-                ps[i].x = loaded_file.first[i].y;
-                ps[i].z = loaded_file.first[i].x;
+                ps[i].x = loaded_file.first[i].y-bb_center.y;
+                ps[i].z = loaded_file.first[i].x-bb_center.x;
             }
         }
     }
@@ -153,9 +155,9 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
         std::vector<Vertex> vertices(ps.size());
         for (int i = 0; i < ps.size(); ++i) {
             vns[i] = glm::normalize(vns[i]);
-            vertices[i] = {.position=ps[i]-bb_center, .normal=vns[i]};
+            vertices[i] = {.position=ps[i]*bb_scalar, .normal=vns[i]};
         }
-        return {vertices, i_p};
+        return {.vertices=vertices, .indices=i_p};
     } else {
         auto cmp = [](const glm::vec3 lhs, const glm::vec3 rhs) {
             return lhs.x < rhs.x || (lhs.x == rhs.x && lhs.y < rhs.y) ||
@@ -182,7 +184,7 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
         for (int i = 0; i < indices.size(); ++i) {
             if (i2i.find({i_p[i], i_fn[i]}) == i2i.end()) {
                 i2i[{i_p[i], i_fn[i]}] = vertices.size();
-                vertices.push_back({ps[i_p[i]], fns[i_fn[i]]});
+                vertices.push_back({ps[i_p[i]]*bb_scalar, fns[i_fn[i]]});
             }
             indices[i] = i2i[{i_p[i], i_fn[i]}];
         }
