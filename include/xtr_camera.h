@@ -42,6 +42,10 @@ class TurnTableCamera {
     inline glm::vec3 get_origin() const { return _origin; }
     inline void set_origin(const glm::vec3 origin) { _origin = origin; }
 
+    void update_origin(const glm::vec3 delta) {
+        _origin += delta * _move_speed;
+    }
+
     inline void imgui() {
         if (ImGui::TreeNode("Camera")) {
             ImGui::InputFloat3("origin", (float *)&_origin);
@@ -57,5 +61,6 @@ class TurnTableCamera {
     float _polar_angle;
     float _azimuthal_angle;
     glm::vec3 _origin;
+    float _move_speed = 5.f;
 };
 } // namespace xtr

@@ -1,3 +1,4 @@
+#include "SDL_keycode.h"
 #include <xtr_app.h>
 #include <xtr_buffer.h>
 #include <xtr_camera.h>
@@ -72,11 +73,17 @@ int main(int argc, char *argv[]) {
     while (app.is_running()) {
         app.update_input();
         if (app.is_button_down(SDL_BUTTON_LEFT)) {
-            camera.set_phi(camera.get_phi() + app.get_mouse_delta().x * 1e2f);
+            camera.set_phi(camera.get_phi() + (app.get_mouse_delta().x * 1e1f));
             camera.set_theta(camera.get_theta() +
-                             app.get_mouse_delta().y * 1e2f);
+                             (app.get_mouse_delta().y * 1e1f));
         }
-        camera.set_r(camera.get_r() - app.get_wheel_delta().y * 1e2f);
+        camera.set_r(camera.get_r() - (app.get_wheel_delta().y * 1e1f));
+        const glm::vec3 origin_delta = {
+            app.is_key_down(SDLK_RIGHT) - app.is_key_down(SDLK_LEFT),
+            app.is_key_down(SDLK_UP) - app.is_key_down(SDLK_DOWN),
+            app.is_key_down(SDLK_PERIOD) - app.is_key_down(SDLK_COMMA)
+        };
+        camera.update_origin(origin_delta);
 
         app.start_frame();
         if (app.enable_imgui) {
