@@ -122,13 +122,13 @@ int main(int argc, char *argv[]) {
         framebuffer.unbind();
 
         float z_max = 0.f, z_min = 1e32f;
-        /*z_max = 1e4f, z_min = 1e2f;*/
         for (const auto &pixel : z_buffer) {
             if (pixel.x > 0) {
                 z_max = std::max(pixel.x, z_max);
                 z_min = std::min(pixel.x, z_min);
             }
         }
+        /*z_max = 1e4f, z_min = 1e2f;*/
 
         glActiveTexture(GL_TEXTURE0);
         z_buffer_texture.bind();
