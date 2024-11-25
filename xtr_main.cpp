@@ -70,6 +70,7 @@ int main(int argc, char *argv[]) {
     framebuffer.unbind();
 
     char imgui_mesh_name[50] = {"Venus"};
+    char imgui_texture_name[30] = {"fig-9e"};
 
     app.enable_imgui = true;
     while (app.is_running()) {
@@ -96,6 +97,16 @@ int main(int argc, char *argv[]) {
                 mesh_pass.upload_mesh(xtr::load_mesh(
                     std::string("./data/models/") + imgui_mesh_name + ".ply",
                     true));
+            }
+            ImGui::Separator();
+            ImGui::InputTextWithHint("Texture Name", "fig-9e", imgui_texture_name, 30);
+            if (ImGui::Button("Load Texture")) {
+                std::string texture_filepath =
+                    std::string("./data/textures/") + imgui_texture_name + ".ppm";
+                if (std::filesystem::exists(texture_filepath)) {
+                    xtr::Texture tonemap_texture =
+                        xtr::load_texture(texture_filepath);
+                }
             }
             ImGui::End();
             ImGui::Render();
