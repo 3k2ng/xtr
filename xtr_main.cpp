@@ -1,3 +1,4 @@
+#include "imgui.h"
 #include <xtr_app.h>
 #include <xtr_buffer.h>
 #include <xtr_camera.h>
@@ -47,7 +48,7 @@ int main(int argc, char *argv[]) {
     obam_texture.unbind();
 
     xtr::Texture tonemap_texture =
-        xtr::load_texture("./data/textures/fig-9e.ppm");
+        xtr::load_texture("./data/textures/fig-7c.ppm");
 
     xtr::Renderbuffer renderbuffer;
     renderbuffer.bind();
@@ -71,6 +72,9 @@ int main(int argc, char *argv[]) {
 
     char imgui_mesh_name[50] = {"Venus"};
     char imgui_texture_name[30] = {"fig-9e"};
+
+    float z_min = 500.f;
+    float r = 10.f;
 
     app.enable_imgui = true;
     while (app.is_running()) {
@@ -108,6 +112,9 @@ int main(int argc, char *argv[]) {
                         xtr::load_texture(texture_filepath);
                 }
             }
+            ImGui::Separator();
+            ImGui::DragFloat("z_min", &z_min, 10.f, 0.f, 1e8f);
+            ImGui::DragFloat("r", &r, 0.1f, 1.f, 1e8f);
             ImGui::End();
             ImGui::Render();
         }
@@ -132,6 +139,7 @@ int main(int argc, char *argv[]) {
                      GL_RGBA, GL_FLOAT, z_buffer.data());
         framebuffer.unbind();
 
+        /*
         float z_max = 0.f, z_min = 1e32f;
         for (const auto &pixel : z_buffer) {
             if (pixel.x > 0) {
@@ -139,7 +147,8 @@ int main(int argc, char *argv[]) {
                 z_min = std::min(pixel.x, z_min);
             }
         }
-        /*z_max = 1e4f, z_min = 1e2f;*/
+        */
+        float z_max = z_min * r;
 
         glActiveTexture(GL_TEXTURE0);
         z_buffer_texture.bind();

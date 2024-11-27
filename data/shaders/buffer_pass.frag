@@ -9,6 +9,8 @@ uniform bool uni_dof;
 uniform vec3 uni_camera_pos;
 uniform vec3 uni_camera_dir;
 
+vec3 light_dir = normalize(vec3(1., 1., 1.));
+
 void main()
 {
     if (uni_dof) {
@@ -18,4 +20,5 @@ void main()
         z_buffer = vec4(vec3(dot(normalize(uni_camera_dir), frag_position - uni_camera_pos)), 1.);
     }
     obam = vec4(vec3(abs(dot(frag_normal, uni_camera_dir))), 1.);
+    obam = vec4(vec3(dot(frag_normal, light_dir)), 1.);
 }
