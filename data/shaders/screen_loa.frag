@@ -9,12 +9,28 @@ uniform float uni_z_max;
 uniform sampler2D uni_z_buffer;
 uniform sampler2D uni_obam;
 uniform sampler2D uni_tonemap;
+uniform float uni_z_c;
+uniform bool uni_use_dof;
 
 void main()
 {
     float z = texture(uni_z_buffer, uv).x;
     if (z <= 0.) discard;
+
     float dbam = log(z / uni_z_min) / log(uni_z_max / uni_z_min);
+
+    if (uni_use_dof) {
+        if (z < uni_z_c) {
+            float dof_z_min = uni_z_c - uni_z_min;
+            float dof_z_max = uni_z_c - uni_z_max;
+            dbam = 1.f - (log(z / dof_z_min) / log(dof_z_max / dof_z_min));
+        } else {
+            float dof_z_min = uni_z_c + uni_z_min;
+            float dof_z_max = uni_z_c + uni_z_max;
+            dbam = log(z / dof_z_min) / log(dof_z_max / dof_z_min);
+        }
+    }
+
     float obam = texture(uni_obam, uv).x;
     frag_color = texture(uni_tonemap, vec2(obam, dbam));
 }

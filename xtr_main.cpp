@@ -1,3 +1,4 @@
+#include "glm/fwd.hpp"
 #include "imgui.h"
 #include <xtr_app.h>
 #include <xtr_buffer.h>
@@ -75,6 +76,8 @@ int main(int argc, char *argv[]) {
 
     float z_min = 500.f;
     float r = 10.f;
+    glm::vec3 z_c = glm::vec3(69.f, 420.f, 1337.f);
+    bool use_dof = false;
 
     app.enable_imgui = true;
     while (app.is_running()) {
@@ -115,6 +118,8 @@ int main(int argc, char *argv[]) {
             ImGui::Separator();
             ImGui::DragFloat("z_min", &z_min, 10.f, 0.f, 1e8f);
             ImGui::DragFloat("r", &r, 0.1f, 1.f, 1e8f);
+            ImGui::DragFloat3("z_c", &z_c.x);
+            ImGui::Checkbox("Use Depth of Field", &use_dof);
             ImGui::End();
             ImGui::Render();
         }
@@ -125,7 +130,7 @@ int main(int argc, char *argv[]) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         const xtr::Program &mesh_pass_program = mesh_pass.get_program();
         mesh_pass_program.use();
-        mesh_pass_program.uni_1i(mesh_pass_program.loc("uni_dof"), false);
+        mesh_pass_program.uni_1i(mesh_pass_program.loc("uni_dof"), use_dof);
         mesh_pass_program.uni_vec3(mesh_pass_program.loc("uni_camera_pos"),
                                    camera.get_position());
         mesh_pass_program.uni_vec3(mesh_pass_program.loc("uni_camera_dir"),
@@ -165,6 +170,8 @@ int main(int argc, char *argv[]) {
         screen_pass_program.uni_1i(screen_pass_program.loc("uni_z_buffer"), 0);
         screen_pass_program.uni_1i(screen_pass_program.loc("uni_obam"), 1);
         screen_pass_program.uni_1i(screen_pass_program.loc("uni_tonemap"), 2);
+        screen_pass_program.uni_1f(screen_pass_program.loc("uni_z_c"), glm::length(z_c-camera.get_position()));
+        screen_pass_program.uni_1i(screen_pass_program.loc("uni_use_dof"), use_dof);
         screen_pass.draw();
 
         app.end_frame();
