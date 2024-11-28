@@ -23,14 +23,15 @@ void main()
         if (z < uni_z_c) {
             float dof_z_min = uni_z_c - uni_z_min;
             float dof_z_max = uni_z_c - uni_z_max;
-            dbam = 1.f - (log(z / dof_z_min) / log(dof_z_max / dof_z_min));
+            dbam = (log(z / dof_z_min) / log(dof_z_max / dof_z_min)); // this is so weird. why does it work without the 1- ?
         } else {
             float dof_z_min = uni_z_c + uni_z_min;
             float dof_z_max = uni_z_c + uni_z_max;
-            dbam = log(z / dof_z_min) / log(dof_z_max / dof_z_min);
+            dbam = (log(z / dof_z_min) / log(dof_z_max / dof_z_min));
         }
     }
 
     float obam = texture(uni_obam, uv).x;
     frag_color = texture(uni_tonemap, vec2(obam, dbam));
+    frag_color = vec4(vec3(dbam), 1.f);
 }

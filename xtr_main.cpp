@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     obam_texture.unbind();
 
     xtr::Texture tonemap_texture =
-        xtr::load_texture("./data/textures/fig-7c.ppm");
+        xtr::load_texture("./data/textures/fig-8a.ppm");
 
     xtr::Renderbuffer renderbuffer;
     renderbuffer.bind();
@@ -75,8 +75,9 @@ int main(int argc, char *argv[]) {
     char imgui_texture_name[30] = {"fig-9e"};
 
     float z_min = 500.f;
-    float r = 10.f;
-    glm::vec3 z_c = glm::vec3(69.f, 420.f, 1337.f);
+    float r = 2.f;
+    // glm::vec3 z_c = glm::vec3(69.f, 420.f, 1337.f);
+    glm::vec3 z_c = glm::vec3(0.f);
     bool use_dof = false;
 
     app.enable_imgui = true;
@@ -126,7 +127,7 @@ int main(int argc, char *argv[]) {
 
         glViewport(0, 0, app.get_screen_width(), app.get_screen_height());
         framebuffer.bind();
-        glClearColor(0.f, 0.f, 0.f, 1.0f);
+        glClearColor(0.f, 0.f, 0.f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         const xtr::Program &mesh_pass_program = mesh_pass.get_program();
         mesh_pass_program.use();
