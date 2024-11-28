@@ -74,11 +74,12 @@ int main(int argc, char *argv[]) {
     char imgui_mesh_name[50] = {"Venus"};
     char imgui_texture_name[30] = {"fig-9e"};
 
-    float z_min = 500.f;
+    float z_min = 100.f;
     float r = 2.f;
-    // glm::vec3 z_c = glm::vec3(69.f, 420.f, 1337.f);
+    float obam_r = 10.f;
     glm::vec3 z_c = glm::vec3(0.f);
     bool use_dof = false;
+    bool use_obam = false;
 
     app.enable_imgui = true;
     while (app.is_running()) {
@@ -117,10 +118,13 @@ int main(int argc, char *argv[]) {
                 }
             }
             ImGui::Separator();
-            ImGui::DragFloat("z_min", &z_min, 10.f, 0.f, 1e8f);
-            ImGui::DragFloat("r", &r, 0.1f, 1.f, 1e8f);
+            ImGui::DragFloat("z_min", &z_min, 5.f, 5.f, 1e8f);
+            ImGui::DragFloat("r", &r, 0.05f, 1.05f, 1e8f);
             ImGui::DragFloat3("z_c", &z_c.x);
             ImGui::Checkbox("Use Depth of Field", &use_dof);
+            ImGui::Separator();
+            ImGui::DragFloat("obam_r", &obam_r, 0.1f, 0.1f, 1e8f);
+            ImGui::Checkbox("Use Orientation Based", &use_obam);
             ImGui::End();
             ImGui::Render();
         }
@@ -131,11 +135,12 @@ int main(int argc, char *argv[]) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         const xtr::Program &mesh_pass_program = mesh_pass.get_program();
         mesh_pass_program.use();
-        mesh_pass_program.uni_1i(mesh_pass_program.loc("uni_dof"), use_dof);
         mesh_pass_program.uni_vec3(mesh_pass_program.loc("uni_camera_pos"),
                                    camera.get_position());
         mesh_pass_program.uni_vec3(mesh_pass_program.loc("uni_camera_dir"),
                                    camera.get_direction());
+        mesh_pass_program.uni_1f(mesh_pass_program.loc("uni_r"), obam_r);
+        mesh_pass_program.uni_1i(mesh_pass_program.loc("uni_obam"), use_obam);
         mesh_pass.draw(model_matrix, camera.view_matrix(), projection_matrix);
 
         glReadBuffer(GL_COLOR_ATTACHMENT0);
@@ -145,16 +150,18 @@ int main(int argc, char *argv[]) {
                      GL_RGBA, GL_FLOAT, z_buffer.data());
         framebuffer.unbind();
 
-        /*
-        float z_max = 0.f, z_min = 1e32f;
-        for (const auto &pixel : z_buffer) {
-            if (pixel.x > 0) {
-                z_max = std::max(pixel.x, z_max);
-                z_min = std::min(pixel.x, z_min);
+        float z_max;
+        if (use_obam) {
+            z_max = 0.f, z_min = 1e32f;
+            for (const auto &pixel : z_buffer) {
+                if (pixel.x > 0) {
+                    z_max = std::max(pixel.x, z_max);
+                    z_min = std::min(pixel.x, z_min);
+                }
             }
+        } else {
+            z_max = z_min * r;
         }
-        */
-        float z_max = z_min * r;
 
         glActiveTexture(GL_TEXTURE0);
         z_buffer_texture.bind();
