@@ -1,5 +1,5 @@
 #define MODEL "Venus"
-#define TEXTURE "8a"
+#define TEXTURE "10c"
 
 #include "glm/fwd.hpp"
 #include "imgui.h"
@@ -80,9 +80,11 @@ int main(int argc, char *argv[]) {
     float z_min = 100.f;
     float r = 2.f;
     float obam_r = 10.f;
+    float obam_s = 10.f;
     glm::vec3 z_c = glm::vec3(0.f);
     bool use_dof = false;
     bool use_obam = false;
+    bool use_sbam = false;
 
     app.enable_imgui = true;
     while (app.is_running()) {
@@ -126,8 +128,10 @@ int main(int argc, char *argv[]) {
             ImGui::DragFloat3("z_c", &z_c.x);
             ImGui::Checkbox("Use Depth of Field", &use_dof);
             ImGui::Separator();
-            ImGui::DragFloat("obam_r", &obam_r, 0.1f, 0.1f, 1e8f);
-            ImGui::Checkbox("Use Orientation Based", &use_obam);
+            ImGui::Checkbox("Use Near-Silhouette (OBAM)", &use_obam);
+            ImGui::DragFloat("Near-Silhouette Magnitude", &obam_r, 0.1f, 0.1f, 1e8f);
+            ImGui::Checkbox("Use Specular Based (OBAM)", &use_sbam);
+            ImGui::DragFloat("Specular Shininess", &obam_s, 0.1f, 1.1f, 1e8f);
             ImGui::End();
             ImGui::Render();
         }
@@ -142,8 +146,10 @@ int main(int argc, char *argv[]) {
                                    camera.get_position());
         mesh_pass_program.uni_vec3(mesh_pass_program.loc("uni_camera_dir"),
                                    camera.get_direction());
+        mesh_pass_program.uni_1i(mesh_pass_program.loc("uni_use_obam"), use_obam);
+        mesh_pass_program.uni_1i(mesh_pass_program.loc("uni_use_sbam"), use_sbam);
         mesh_pass_program.uni_1f(mesh_pass_program.loc("uni_r"), obam_r);
-        mesh_pass_program.uni_1i(mesh_pass_program.loc("uni_obam"), use_obam);
+        mesh_pass_program.uni_1f(mesh_pass_program.loc("uni_s"), obam_s);
         mesh_pass.draw(model_matrix, camera.view_matrix(), projection_matrix);
 
         glReadBuffer(GL_COLOR_ATTACHMENT0);
@@ -154,7 +160,7 @@ int main(int argc, char *argv[]) {
         framebuffer.unbind();
 
         float z_max;
-        if (use_obam) {
+        if (use_obam || use_sbam) {
             z_max = 0.f, z_min = 1e32f;
             for (const auto &pixel : z_buffer) {
                 if (pixel.x > 0) {
@@ -181,8 +187,11 @@ int main(int argc, char *argv[]) {
         screen_pass_program.uni_1i(screen_pass_program.loc("uni_z_buffer"), 0);
         screen_pass_program.uni_1i(screen_pass_program.loc("uni_obam"), 1);
         screen_pass_program.uni_1i(screen_pass_program.loc("uni_tonemap"), 2);
+
         screen_pass_program.uni_1f(screen_pass_program.loc("uni_z_c"), glm::length(z_c-camera.get_position()));
         screen_pass_program.uni_1i(screen_pass_program.loc("uni_use_dof"), use_dof);
+        screen_pass_program.uni_1i(screen_pass_program.loc("uni_use_obam"), use_obam);
+        screen_pass_program.uni_1i(screen_pass_program.loc("uni_use_sbam"), use_sbam);
         screen_pass.draw();
 
         app.end_frame();

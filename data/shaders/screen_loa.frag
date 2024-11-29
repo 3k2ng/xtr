@@ -11,8 +11,8 @@ uniform sampler2D uni_z_buffer;
 uniform sampler2D uni_obam;
 uniform sampler2D uni_tonemap;
 
-uniform float uni_obam_r;
 uniform bool uni_use_obam;
+uniform bool uni_use_sbam;
 
 uniform float uni_z_c;
 uniform bool uni_use_dof;
@@ -23,10 +23,10 @@ void main()
     if (z <= 0.) discard;
 
     float obam = texture(uni_obam, uv).x;
-    
+
     float dbam;
-    if (uni_use_obam) {
-        dbam = z;
+    if (uni_use_obam || uni_use_sbam) {
+        z /= uni_z_max;
         frag_color = texture(uni_tonemap, vec2(obam, dbam));
     } else if (uni_use_dof) {
         if (z < uni_z_c) {
@@ -43,5 +43,5 @@ void main()
         dbam = log(z / uni_z_min) / log(uni_z_max / uni_z_min);
         frag_color = texture(uni_tonemap, vec2(obam, dbam));
     }
-    // frag_color = vec4(vec3(dbam), 1.f); // DEBUG
+    frag_color = vec4(vec3(dbam), 1.f); // DEBUG
 }
