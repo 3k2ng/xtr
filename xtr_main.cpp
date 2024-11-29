@@ -1,3 +1,6 @@
+#define MODEL "Venus"
+#define TEXTURE "8a"
+
 #include "glm/fwd.hpp"
 #include "imgui.h"
 #include <xtr_app.h>
@@ -29,7 +32,7 @@ int main(int argc, char *argv[]) {
         mesh_pass.upload_mesh(xtr::load_mesh(
             std::string("./data/models/") + argv[1] + ".ply", true));
     } else {
-        mesh_pass.upload_mesh(xtr::load_mesh("./data/models/Venus.ply", true));
+        mesh_pass.upload_mesh(xtr::load_mesh(std::string("./data/models/") + MODEL + ".ply", true));
     }
 
     xtr::Framebuffer framebuffer;
@@ -49,7 +52,7 @@ int main(int argc, char *argv[]) {
     obam_texture.unbind();
 
     xtr::Texture tonemap_texture =
-        xtr::load_texture("./data/textures/fig-8a.ppm");
+        xtr::load_texture(std::string("./data/textures/fig-")+TEXTURE+".ppm");
 
     xtr::Renderbuffer renderbuffer;
     renderbuffer.bind();
