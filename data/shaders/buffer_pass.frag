@@ -25,9 +25,11 @@ void main()
         float D = pow(abs(NdotV), uni_r);
         z_buffer = vec4(vec3(D), 1.f);
         if (uni_use_sbam) { // Specular
-            light_dir = normalize(light_pos - frag_position); // actual light direction
+            light_dir = -normalize(light_pos - frag_position); // actual light direction
             vec3 R = (2. * dot(light_dir, frag_normal) * frag_normal) - light_dir;
-            obam = vec4(vec3(dot(R, V)), 1.); // light
+            float RdotV = dot(normalize(R), V);
+            float spec = pow(RdotV, uni_s);
+            obam = vec4(vec3(spec), 1.); // light
         } else { // Near-Silhouette
             obam = vec4(vec3(dot(frag_normal, light_dir)), 1.); // light
         }

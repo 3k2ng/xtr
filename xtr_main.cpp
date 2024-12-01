@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
 
     float z_min = 100.f;
     float r = 2.f;
-    float obam_r = 10.f;
+    float obam_r = 1.f;
     float obam_s = 10.f;
     glm::vec3 z_c = glm::vec3(0.f);
     bool use_dof = false;
