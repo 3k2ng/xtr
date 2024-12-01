@@ -32,7 +32,8 @@ int main(int argc, char *argv[]) {
         mesh_pass.upload_mesh(xtr::load_mesh(
             std::string("./data/models/") + argv[1] + ".ply", true));
     } else {
-        mesh_pass.upload_mesh(xtr::load_mesh(std::string("./data/models/") + MODEL + ".ply", true));
+        mesh_pass.upload_mesh(xtr::load_mesh(
+            std::string("./data/models/") + MODEL + ".ply", true));
     }
 
     xtr::Framebuffer framebuffer;
@@ -51,8 +52,9 @@ int main(int argc, char *argv[]) {
                  nullptr);
     obam_texture.unbind();
 
-    xtr::Texture tonemap_texture =
-        xtr::load_texture(std::string("./data/textures/fig-")+TEXTURE+".ppm");
+    xtr::Texture tonemap_texture{GL_TEXTURE_2D};
+    tonemap_texture.load_file(std::string("./data/textures/fig-") + TEXTURE +
+                              ".ppm");
 
     xtr::Renderbuffer renderbuffer;
     renderbuffer.bind();
@@ -113,13 +115,13 @@ int main(int argc, char *argv[]) {
                     true));
             }
             ImGui::Separator();
-            ImGui::InputTextWithHint("Texture Name", "fig-9e", imgui_texture_name, 30);
+            ImGui::InputTextWithHint("Texture Name", "fig-9e",
+                                     imgui_texture_name, 30);
             if (ImGui::Button("Load Texture")) {
-                std::string texture_filepath =
-                    std::string("./data/textures/") + imgui_texture_name + ".ppm";
+                std::string texture_filepath = std::string("./data/textures/") +
+                                               imgui_texture_name + ".ppm";
                 if (std::filesystem::exists(texture_filepath)) {
-                    xtr::Texture tonemap_texture =
-                        xtr::load_texture(texture_filepath);
+                    tonemap_texture.load_file(texture_filepath);
                 }
             }
             ImGui::Separator();
@@ -129,7 +131,8 @@ int main(int argc, char *argv[]) {
             ImGui::Checkbox("Use Depth of Field", &use_dof);
             ImGui::Separator();
             ImGui::Checkbox("Use Near-Silhouette (OBAM)", &use_obam);
-            ImGui::DragFloat("Near-Silhouette Magnitude", &obam_r, 0.1f, 0.1f, 1e8f);
+            ImGui::DragFloat("Near-Silhouette Magnitude", &obam_r, 0.1f, 0.1f,
+                             1e8f);
             ImGui::Checkbox("Use Specular Based (OBAM)", &use_sbam);
             ImGui::DragFloat("Specular Shininess", &obam_s, 0.1f, 1.1f, 1e8f);
             ImGui::End();
@@ -146,8 +149,10 @@ int main(int argc, char *argv[]) {
                                    camera.get_position());
         mesh_pass_program.uni_vec3(mesh_pass_program.loc("uni_camera_dir"),
                                    camera.get_direction());
-        mesh_pass_program.uni_1i(mesh_pass_program.loc("uni_use_obam"), use_obam);
-        mesh_pass_program.uni_1i(mesh_pass_program.loc("uni_use_sbam"), use_sbam);
+        mesh_pass_program.uni_1i(mesh_pass_program.loc("uni_use_obam"),
+                                 use_obam);
+        mesh_pass_program.uni_1i(mesh_pass_program.loc("uni_use_sbam"),
+                                 use_sbam);
         mesh_pass_program.uni_1f(mesh_pass_program.loc("uni_r"), obam_r);
         mesh_pass_program.uni_1f(mesh_pass_program.loc("uni_s"), obam_s);
         mesh_pass.draw(model_matrix, camera.view_matrix(), projection_matrix);
@@ -188,10 +193,14 @@ int main(int argc, char *argv[]) {
         screen_pass_program.uni_1i(screen_pass_program.loc("uni_obam"), 1);
         screen_pass_program.uni_1i(screen_pass_program.loc("uni_tonemap"), 2);
 
-        screen_pass_program.uni_1f(screen_pass_program.loc("uni_z_c"), glm::length(z_c-camera.get_position()));
-        screen_pass_program.uni_1i(screen_pass_program.loc("uni_use_dof"), use_dof);
-        screen_pass_program.uni_1i(screen_pass_program.loc("uni_use_obam"), use_obam);
-        screen_pass_program.uni_1i(screen_pass_program.loc("uni_use_sbam"), use_sbam);
+        screen_pass_program.uni_1f(screen_pass_program.loc("uni_z_c"),
+                                   glm::length(z_c - camera.get_position()));
+        screen_pass_program.uni_1i(screen_pass_program.loc("uni_use_dof"),
+                                   use_dof);
+        screen_pass_program.uni_1i(screen_pass_program.loc("uni_use_obam"),
+                                   use_obam);
+        screen_pass_program.uni_1i(screen_pass_program.loc("uni_use_sbam"),
+                                   use_sbam);
         screen_pass.draw();
 
         app.end_frame();

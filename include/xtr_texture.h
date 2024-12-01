@@ -37,30 +37,27 @@ class Texture {
     inline const GLenum target() const { return _target; }
     inline operator GLuint() const { return _texture; }
 
+    inline void load_surface(const SDL_Surface &surface,
+                             const bool is_repeat = false,
+                             const bool is_linear = false) {
+        bind();
+        SDL_Surface *rgba_surface = SDL_ConvertSurfaceFormat(
+            (SDL_Surface *)(&surface), SDL_PIXELFORMAT_RGBA32, 0);
+        glTexImage2D(_target, 0, GL_RGBA, rgba_surface->w, rgba_surface->h, 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE, rgba_surface->pixels);
+        unbind();
+    }
+
+    inline void load_file(const std::filesystem::path &file_path,
+                          const bool is_repeat = false,
+                          const bool is_linear = false) {
+        SDL_Surface *surface = IMG_Load(file_path.c_str());
+        load_surface(*surface, is_repeat, is_linear);
+        SDL_FreeSurface(surface);
+    }
+
   private:
     GLenum _target;
     GLuint _texture;
 };
-
-inline Texture load_texture_from_surface(const SDL_Surface &surface,
-                                         const bool is_repeat = false,
-                                         const bool is_linear = false) {
-    SDL_Surface *rgba_surface = SDL_ConvertSurfaceFormat(
-        (SDL_Surface *)(&surface), SDL_PIXELFORMAT_RGBA32, 0);
-    Texture texture{GL_TEXTURE_2D, is_repeat, is_linear};
-    texture.bind();
-    glTexImage2D(texture.target(), 0, GL_RGBA, rgba_surface->w, rgba_surface->h,
-                 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba_surface->pixels);
-    texture.unbind();
-    return texture;
-}
-
-inline Texture load_texture(const std::filesystem::path &file_path,
-                            const bool is_repeat = false,
-                            const bool is_linear = false) {
-    SDL_Surface *surface = IMG_Load(file_path.c_str());
-    Texture texture = load_texture_from_surface(*surface, is_repeat, is_linear);
-    SDL_FreeSurface(surface);
-    return texture;
-}
 } // namespace xtr
