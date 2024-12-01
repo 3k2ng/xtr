@@ -12,7 +12,8 @@ uniform bool uni_use_sbam;
 uniform float uni_r;
 uniform float uni_s;
 
-vec3 light_dir = normalize(vec3(1., 1., 1.));
+vec3 light_pos = vec3(2000., 2000., 2000.);
+vec3 light_dir = normalize(light_pos); // infinitely far away light
 
 void main()
 {
@@ -24,8 +25,9 @@ void main()
         float D = pow(abs(NdotV), uni_r);
         z_buffer = vec4(vec3(D), 1.f);
         if (uni_use_sbam) { // Specular
-
-            obam = vec4(vec3(dot(frag_normal, light_dir)), 1.); // light
+            light_dir = normalize(light_pos - frag_position); // actual light direction
+            vec3 R = (2. * dot(light_dir, frag_normal) * frag_normal) - light_dir;
+            obam = vec4(vec3(dot(R, V)), 1.); // light
         } else { // Near-Silhouette
             obam = vec4(vec3(dot(frag_normal, light_dir)), 1.); // light
         }

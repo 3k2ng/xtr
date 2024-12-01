@@ -27,6 +27,7 @@ void main()
     float dbam;
     if (uni_use_obam || uni_use_sbam) {
         z /= uni_z_max;
+        dbam = 1. - z;
         frag_color = texture(uni_tonemap, vec2(obam, dbam));
     } else if (uni_use_dof) {
         if (z < uni_z_c) {
@@ -43,5 +44,5 @@ void main()
         dbam = log(z / uni_z_min) / log(uni_z_max / uni_z_min);
         frag_color = texture(uni_tonemap, vec2(obam, dbam));
     }
-    frag_color = vec4(vec3(dbam), 1.f); // DEBUG
+    // frag_color = vec4(vec3(obam), 1.f); // DEBUG
 }

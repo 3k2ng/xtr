@@ -166,11 +166,12 @@ int main(int argc, char *argv[]) {
 
         float z_max;
         if (use_obam || use_sbam) {
-            z_max = 0.f, z_min = 1e32f;
+            // z_max = 0.f, z_min = 1e32f;
+            z_max = 0.f;
             for (const auto &pixel : z_buffer) {
                 if (pixel.x > 0) {
                     z_max = std::max(pixel.x, z_max);
-                    z_min = std::min(pixel.x, z_min);
+                    // z_min = std::min(pixel.x, z_min);
                 }
             }
         } else {
