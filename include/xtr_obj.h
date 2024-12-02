@@ -159,13 +159,18 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
     std::vector<glm::vec3> ans(ps.size(), glm::vec3{});
     std::vector<Vertex> vertices(ps.size());
     if (abstracted_shape == 0) { // smooth
-        for (int i = 0; i < indices.size(); i += 3) {
-            ans[indices[i]] += vns[indices[i + 1]] + vns[indices[i + 2]];
-            ans[indices[i + 1]] += vns[indices[i]] + vns[indices[i + 2]];
-            ans[indices[i + 2]] += vns[indices[i]] + vns[indices[i + 1]];
-        }
-        for (int i = 0; i < ps.size(); ++i) {
-            ans[i] = glm::normalize(ans[i]);
+        std::vector<glm::vec3> tns = vns;
+        const int iterations = 4;
+        for (int it = 0; it < iterations; ++it) {
+            for (int i = 0; i < indices.size(); i += 3) {
+                ans[indices[i]] += tns[indices[i + 1]] + tns[indices[i + 2]];
+                ans[indices[i + 1]] += tns[indices[i]] + tns[indices[i + 2]];
+                ans[indices[i + 2]] += tns[indices[i]] + tns[indices[i + 1]];
+            }
+            for (int i = 0; i < ps.size(); ++i) {
+                ans[i] = glm::normalize(ans[i]);
+                tns[i] = ans[i];
+            }
         }
     } else if (abstracted_shape == 1) { // ellipse
         for (int i = 0; i < ps.size(); ++i) {

@@ -226,7 +226,7 @@ int main(int argc, char *argv[]) {
         }
 
         float z_c = z_buffer[app.get_screen_width() * z_c_pick.x +
-                             (app.get_screen_height() * z_c_pick.y) *
+                             (app.get_screen_height() * (1 - z_c_pick.y)) *
                                  app.get_screen_width()]
                         .x;
 
