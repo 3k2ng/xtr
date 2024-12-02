@@ -1,6 +1,11 @@
 #define MODEL "Venus"
 #define TEXTURE "10c"
 
+#define SMOOTHED 0
+#define ELLIPSE 1
+#define CYLINDER 2
+#define SPHERE 3
+
 #include "glm/fwd.hpp"
 #include "imgui.h"
 #include <xtr_app.h>
@@ -89,6 +94,8 @@ int main(int argc, char *argv[]) {
     bool use_obam = false;
     bool use_sbam = false;
 
+    int norm_type = SMOOTHED;
+
     app.enable_imgui = true;
     while (app.is_running()) {
         app.update_input();
@@ -138,6 +145,10 @@ int main(int argc, char *argv[]) {
             ImGui::DragFloat("Specular Shininess", &obam_s, 0.1f, 1.1f, 1e8f);
             ImGui::Separator();
             ImGui::DragFloat("Normal Abstraction", &norm_fac, 0.01f, 0.f, 1.f);
+            ImGui::RadioButton("Smoothed", &norm_type, SMOOTHED);
+            ImGui::RadioButton("Ellipse", &norm_type, ELLIPSE);
+            ImGui::RadioButton("Cylinder", &norm_type, CYLINDER);
+            ImGui::RadioButton("Sphere", &norm_type, SPHERE);
             ImGui::End();
             ImGui::Render();
         }
