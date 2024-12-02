@@ -91,12 +91,12 @@ load_ply_file(const std::filesystem::path &file_path) {
 }
 
 inline Mesh load_mesh(const std::filesystem::path &file_path,
-                      const int abstracted_shape, const bool y_up = true,
-                      const bool x_front = true) {
+                      const int abstracted_shape, const bool y_up,
+                      const bool x_front) {
     std::string file_extension = file_path.filename().extension();
     std::pair<std::vector<glm::vec3>, std::vector<int>> loaded_file;
     std::vector<glm::vec3> ps;
-    std::vector<int> i_p;
+    std::vector<int> indices;
     if (file_extension == ".obj") {
         loaded_file = load_obj_file(file_path);
     } else if (file_extension == ".ply") {
@@ -105,6 +105,7 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
         return {};
     }
     ps.resize(loaded_file.first.size());
+    indices = loaded_file.second;
 
     glm::vec3 bb_lowest = loaded_file.first[0];
     glm::vec3 bb_highest = loaded_file.first[0];
@@ -117,6 +118,7 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
         bb_lowest.z = std::min(bb_lowest.z, loaded_file.first[i].z);
     }
     glm::vec3 bb_center = (bb_highest + bb_lowest) / glm::vec3(2.0);
+    glm::vec3 bb_dimension = glm::abs(bb_highest - bb_lowest);
     float bb_diag_size = glm::length(bb_highest - bb_lowest);
     float bb_scalar = 1000.f / bb_diag_size;
 
@@ -141,28 +143,58 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
             }
         }
     }
-    i_p = loaded_file.second;
     Mesh mesh;
     std::vector<glm::vec3> vns(ps.size(), glm::vec3{});
-    for (int i = 0; i < i_p.size(); i += 3) {
-        glm::vec3 u = ps[i_p[i + 1]] - ps[i_p[i]],
-                  v = ps[i_p[i + 2]] - ps[i_p[i]];
+    for (int i = 0; i < indices.size(); i += 3) {
+        glm::vec3 u = ps[indices[i + 1]] - ps[indices[i]],
+                  v = ps[indices[i + 2]] - ps[indices[i]];
         glm::vec3 n = glm::cross(u, v);
-        vns[i_p[i]] += n;
-        vns[i_p[i + 1]] += n;
-        vns[i_p[i + 2]] += n;
+        vns[indices[i]] += n;
+        vns[indices[i + 1]] += n;
+        vns[indices[i + 2]] += n;
     }
-    std::vector<Vertex> vertices(ps.size());
     for (int i = 0; i < ps.size(); ++i) {
         vns[i] = glm::normalize(vns[i]);
-        vertices[i] = {ps[i] * bb_scalar, vns[i]};
     }
-    mesh = {vertices, i_p};
-    if (abstracted_shape == 0) {        // smooth
+    std::vector<glm::vec3> ans(ps.size(), glm::vec3{});
+    std::vector<Vertex> vertices(ps.size());
+    if (abstracted_shape == 0) { // smooth
+        for (int i = 0; i < indices.size(); i += 3) {
+            ans[indices[i]] += vns[indices[i + 1]] + vns[indices[i + 2]];
+            ans[indices[i + 1]] += vns[indices[i]] + vns[indices[i + 2]];
+            ans[indices[i + 2]] += vns[indices[i]] + vns[indices[i + 1]];
+        }
+        for (int i = 0; i < ps.size(); ++i) {
+            ans[i] = glm::normalize(ans[i]);
+        }
     } else if (abstracted_shape == 1) { // ellipse
+        for (int i = 0; i < ps.size(); ++i) {
+            ans[i] = glm::normalize(glm::normalize(ps[i] - bb_center) *
+                                    bb_dimension);
+        }
     } else if (abstracted_shape == 2) { // cylinder
+        for (int i = 0; i < ps.size(); ++i) {
+            ans[i] = ps[i] - bb_center;
+            if (bb_dimension.x > bb_dimension.y &&
+                bb_dimension.x > bb_dimension.z) {
+                ans[i].x = 0;
+            } else if (bb_dimension.y > bb_dimension.z &&
+                       bb_dimension.y > bb_dimension.x) {
+                ans[i].y = 0;
+            } else if (bb_dimension.z > bb_dimension.x &&
+                       bb_dimension.z > bb_dimension.y) {
+                ans[i].z = 0;
+            }
+            ans[i] = glm::normalize(ans[i]);
+        }
     } else if (abstracted_shape == 3) { // sphere
+        for (int i = 0; i < ps.size(); ++i) {
+            ans[i] = glm::normalize(ps[i] - bb_center);
+        }
     }
-    return mesh;
+    for (int i = 0; i < ps.size(); ++i) {
+        vertices[i] = {ps[i] * bb_scalar, vns[i], ans[i]};
+    }
+    return {vertices, indices};
 }
 } // namespace xtr

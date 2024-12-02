@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
         mesh_files.push_back(file);
     }
 
-    mesh_pass.upload_mesh(xtr::load_mesh(mesh_files[0], 0));
+    mesh_pass.upload_mesh(xtr::load_mesh(mesh_files[0], 0, true, true));
 
     const std::filesystem::path texture_directory = "./data/textures";
     std::vector<std::filesystem::path> texture_files;
@@ -83,6 +83,8 @@ int main(int argc, char *argv[]) {
     framebuffer.unbind();
 
     int selected_mesh = 0;
+    bool mesh_y_up = true;
+    bool mesh_x_front = true;
     int selected_texture = 0;
 
     float z_min = 100.f;
@@ -128,13 +130,20 @@ int main(int argc, char *argv[]) {
                                           is_selected)) {
                         selected_mesh = i;
                         mesh_pass.upload_mesh(
-                            xtr::load_mesh(mesh_files[i], abstracted_shape));
+                            xtr::load_mesh(mesh_files[i], abstracted_shape,
+                                           mesh_y_up, mesh_x_front));
                     }
                     if (is_selected) {
                         ImGui::SetItemDefaultFocus();
                     }
                 }
                 ImGui::EndCombo();
+            }
+            if (ImGui::Checkbox("mesh_y_up", &mesh_y_up) ||
+                ImGui::Checkbox("mesh_x_front", &mesh_x_front)) {
+                mesh_pass.upload_mesh(xtr::load_mesh(mesh_files[selected_mesh],
+                                                     abstracted_shape,
+                                                     mesh_y_up, mesh_x_front));
             }
             ImGui::Separator();
 
@@ -171,7 +180,8 @@ int main(int argc, char *argv[]) {
             if (ImGui::Combo("Abstracted Shape", &abstracted_shape,
                              abstracted_shapes, 4)) {
                 mesh_pass.upload_mesh(xtr::load_mesh(mesh_files[selected_mesh],
-                                                     abstracted_shape));
+                                                     abstracted_shape,
+                                                     mesh_y_up, mesh_x_front));
             }
             ImGui::End();
             ImGui::Render();
