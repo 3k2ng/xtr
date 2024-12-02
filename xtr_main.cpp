@@ -83,6 +83,7 @@ int main(int argc, char *argv[]) {
     float r = 2.f;
     float obam_r = 1.f;
     float obam_s = 10.f;
+    float norm_fac = 0.f;
     glm::vec3 z_c = glm::vec3(0.f);
     bool use_dof = false;
     bool use_obam = false;
@@ -135,6 +136,8 @@ int main(int argc, char *argv[]) {
                              1e8f);
             ImGui::Checkbox("Use Specular Based (OBAM)", &use_sbam);
             ImGui::DragFloat("Specular Shininess", &obam_s, 0.1f, 1.1f, 1e8f);
+            ImGui::Separator();
+            ImGui::DragFloat("Normal Abstraction", &norm_fac, 0.01f, 0.f, 1.f);
             ImGui::End();
             ImGui::Render();
         }
@@ -155,7 +158,7 @@ int main(int argc, char *argv[]) {
                                  use_sbam);
         mesh_pass_program.uni_1f(mesh_pass_program.loc("uni_r"), obam_r);
         mesh_pass_program.uni_1f(mesh_pass_program.loc("uni_s"), obam_s);
-        mesh_pass.draw(model_matrix, camera.view_matrix(), projection_matrix);
+        mesh_pass.draw(model_matrix, camera.view_matrix(), projection_matrix, norm_fac);
 
         glReadBuffer(GL_COLOR_ATTACHMENT0);
         std::vector<glm::vec4> z_buffer(app.get_screen_width() *

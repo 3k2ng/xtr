@@ -35,6 +35,6 @@ void main()
         }
     } else {
         z_buffer = vec4(vec3(length(frag_position - uni_camera_pos)), 1.);
-        obam = vec4(vec3(dot(frag_normal, light_dir)), 1.); // light
+        obam = vec4(vec3(dot(normalize(frag_normal), light_dir)), 1.); // light
     }
 }
