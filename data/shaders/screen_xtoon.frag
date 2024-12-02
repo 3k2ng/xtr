@@ -3,46 +3,45 @@ layout(location = 0) out vec4 frag_color;
 
 in vec2 uv;
 
-uniform float uni_z_min;
-uniform float uni_z_max;
-
-uniform sampler2D uni_z_buffer;
-
-uniform sampler2D uni_obam;
+uniform sampler2D uni_nl;
 uniform sampler2D uni_tonemap;
+uniform sampler2D uni_z_buffer;
+uniform sampler2D uni_obam;
 
 uniform bool uni_use_obam;
-uniform bool uni_use_sbam;
-
-uniform float uni_z_c;
 uniform bool uni_use_dof;
+uniform bool uni_use_specular;
+
+uniform float uni_dbam_z_min;
+uniform float uni_dbam_r;
+uniform float uni_dof_z_c;
 
 void main()
 {
     float z = texture(uni_z_buffer, uv).x;
     if (z <= 0.) discard;
 
-    float obam = texture(uni_obam, uv).x;
-
+    float nl = texture(uni_nl, uv).x;
     float dbam;
-    if (uni_use_obam || uni_use_sbam) {
-        z /= max(uni_z_max, 0.1);
-        dbam = 1. - z;
-        frag_color = texture(uni_tonemap, vec2(obam, dbam));
-    } else if (uni_use_dof) {
-        if (z < uni_z_c) {
-            float dof_z_min = uni_z_c - uni_z_min;
-            float dof_z_max = uni_z_c - uni_z_max;
-            dbam = 1. - (log(z / dof_z_min) / log(dof_z_max / dof_z_min)); // this is so weird. why does it work without the 1- ?
+    if (uni_use_dof) {
+        if (z < uni_dof_z_c) {
+            float dof_z_min = uni_dof_z_c - uni_dbam_z_min;
+            float dof_z_max = uni_dof_z_c - uni_dbam_r * uni_dbam_z_min;
+            dbam = 1. - log(z / dof_z_min) / log(dof_z_max / dof_z_min);
         } else {
-            float dof_z_min = uni_z_c + uni_z_min;
-            float dof_z_max = uni_z_c + uni_z_max;
-            dbam = (log(z / dof_z_max) / log(dof_z_min / dof_z_max));
+            float dof_z_min = uni_dof_z_c + uni_dbam_z_min;
+            float dof_z_max = uni_dof_z_c + uni_dbam_r * uni_dbam_z_min;
+            dbam = log(z / dof_z_max) / log(dof_z_min / dof_z_max);
         }
-        frag_color = texture(uni_tonemap, vec2(obam, dbam));
     } else {
-        dbam = log(z / uni_z_min) / log(uni_z_max / uni_z_min);
-        frag_color = texture(uni_tonemap, vec2(obam, dbam));
+        dbam = log(z / uni_dbam_z_min) / log(uni_dbam_r * uni_dbam_z_min / uni_dbam_z_min);
     }
-    // frag_color = vec4(vec3(dbam), 1.f); // DEBUG
+    float obam = texture(uni_obam, uv).x;
+    // textures are flipped vertically
+    if (uni_use_obam) {
+        frag_color = texture(uni_tonemap, vec2(nl, 1. - obam));
+    }
+    else {
+        frag_color = texture(uni_tonemap, vec2(nl, 1. - dbam));
+    }
 }

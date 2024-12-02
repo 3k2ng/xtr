@@ -25,13 +25,11 @@ class MeshPass {
 
     inline void draw(const glm::mat4 &model_matrix,
                      const glm::mat4 &view_matrix,
-                     const glm::mat4 &projection_matrix,
-                     const float norm_fac) const {
+                     const glm::mat4 &projection_matrix) const {
         _program.use();
         _program.uni_mat4(_program.loc("uni_model"), model_matrix);
         _program.uni_mat4(_program.loc("uni_view"), view_matrix);
         _program.uni_mat4(_program.loc("uni_projection"), projection_matrix);
-        _program.uni_1f(_program.loc("uni_norm_fac"), norm_fac);
         _array.bind();
         glDrawElements(GL_TRIANGLES, _draw_count, GL_UNSIGNED_INT, 0);
         _array.unbind();

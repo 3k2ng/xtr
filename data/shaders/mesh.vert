@@ -10,16 +10,16 @@ uniform mat4 uni_model;
 uniform mat4 uni_view;
 uniform mat4 uni_projection;
 
-uniform float uni_norm_fac;
+uniform float uni_normal_factor;
 
 void main()
 {
     gl_Position = uni_projection * uni_view * uni_model * vec4(vert_position, 1.0);
     frag_position = vec3(uni_model * vec4(vert_position, 1.0));
     vec3 normal = vec3(uni_model * vec4(vert_normal, 1.0));
-    if (uni_norm_fac > 0.f) {
-        vec3 abstracted_normal = vec3(uni_model * vec4(vert_abstracted_normal, 1.0));
-        frag_normal = normal * (1.f - uni_norm_fac) + abstracted_normal * (uni_norm_fac);
+    vec3 abstracted_normal = vec3(uni_model * vec4(vert_abstracted_normal, 1.0));
+    if (uni_normal_factor > 0.f) {
+        frag_normal = mix(normal, abstracted_normal, uni_normal_factor);
     } else {
         frag_normal = normal;
     }

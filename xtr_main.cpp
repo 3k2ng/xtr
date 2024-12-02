@@ -1,4 +1,5 @@
 #include <imgui.h>
+#include <optional>
 #include <xtr_app.h>
 #include <xtr_buffer.h>
 #include <xtr_camera.h>
@@ -40,24 +41,31 @@ int main(int argc, char *argv[]) {
         texture_files.push_back(file);
     }
 
-    const char *abstracted_shapes[] = {"Smooth", "Ellipse", "Cylinder",
-                                       "Sphere"};
-
     xtr::Framebuffer framebuffer;
+
+    xtr::Texture nl_texture{GL_TEXTURE_2D};
+    nl_texture.bind();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, app.get_screen_width(),
+                 app.get_screen_height(), 0, GL_RED, GL_FLOAT, nullptr);
+    nl_texture.unbind();
 
     xtr::Texture z_buffer_texture{GL_TEXTURE_2D};
     z_buffer_texture.bind();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, app.get_screen_width(),
-                 app.get_screen_height(), 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                 nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, app.get_screen_width(),
+                 app.get_screen_height(), 0, GL_RED, GL_FLOAT, nullptr);
     z_buffer_texture.unbind();
 
     xtr::Texture obam_texture{GL_TEXTURE_2D};
     obam_texture.bind();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, app.get_screen_width(),
-                 app.get_screen_height(), 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                 nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, app.get_screen_width(),
+                 app.get_screen_height(), 0, GL_RED, GL_FLOAT, nullptr);
     obam_texture.unbind();
+
+    xtr::Texture position_texture{GL_TEXTURE_2D};
+    position_texture.bind();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, app.get_screen_width(),
+                 app.get_screen_height(), 0, GL_RGB, GL_FLOAT, nullptr);
+    position_texture.unbind();
 
     xtr::Texture tonemap_texture{GL_TEXTURE_2D};
     tonemap_texture.load_file(texture_files[0]);
@@ -70,16 +78,22 @@ int main(int argc, char *argv[]) {
 
     framebuffer.bind();
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                           z_buffer_texture, 0);
+                           nl_texture, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+                           z_buffer_texture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
                            obam_texture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D,
+                           position_texture, 0);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
                               GL_RENDERBUFFER, renderbuffer);
-    unsigned int attachments[2] = {
+    unsigned int attachments[] = {
         GL_COLOR_ATTACHMENT0,
         GL_COLOR_ATTACHMENT1,
+        GL_COLOR_ATTACHMENT2,
+        GL_COLOR_ATTACHMENT3,
     };
-    glDrawBuffers(2, attachments);
+    glDrawBuffers(4, attachments);
     framebuffer.unbind();
 
     int selected_mesh = 0;
@@ -87,17 +101,25 @@ int main(int argc, char *argv[]) {
     bool mesh_x_front = true;
     int selected_texture = 0;
 
-    float z_min = 100.f;
-    float r = 2.f;
-    float obam_r = 1.f;
-    float obam_s = 10.f;
-    float norm_fac = 0.f;
-    glm::vec2 z_c_pick = glm::vec2(.5f, .5f);
-    bool use_dof = false;
-    bool use_obam = false;
-    bool use_sbam = false;
+    const char *detail_mappings[] = {"LOA", "Depth-of-field", "Near-silhouette",
+                                     "Specular highlights"};
+    int detail_mapping = 0;
 
+    // Depth-based attribute mapping
+    float dbam_z_min = 100.f;
+    float dbam_r = 5.f;
+    glm::vec3 dof_c = {};
+
+    // Near-silhouette
+    float near_silhouette_r = 0.;
+
+    // Specular highlights
+    float specular_s = 1.;
+
+    const char *abstracted_shapes[] = {"Smooth", "Ellipse", "Cylinder",
+                                       "Sphere"};
     int abstracted_shape = 0;
+    float normal_factor = 0.;
 
     app.enable_imgui = true;
     while (app.is_running()) {
@@ -107,8 +129,9 @@ int main(int argc, char *argv[]) {
             camera.set_theta(camera.get_theta() +
                              (app.get_mouse_delta().y * 1e1f));
         }
+        std::optional<glm::vec2> c_pick = std::nullopt;
         if (app.is_button_down(SDL_BUTTON_RIGHT)) {
-            z_c_pick = app.get_mouse_position();
+            c_pick = app.get_mouse_position();
         }
         camera.set_r(camera.get_r() - (app.get_wheel_delta().y * 1e1f));
         const glm::vec3 origin_delta = {
@@ -165,18 +188,25 @@ int main(int argc, char *argv[]) {
             }
 
             ImGui::Separator();
-            ImGui::DragFloat("z_min", &z_min, 5.f, 5.f, 1e8f);
-            ImGui::DragFloat("r", &r, 0.05f, 1.05f, 1e8f);
-            ImGui::LabelText("z_c_pick", "%f, %f", z_c_pick.x, z_c_pick.y);
-            ImGui::Checkbox("Use Depth of Field", &use_dof);
+
+            ImGui::Combo("Detail Mapping", &detail_mapping, detail_mappings, 4);
+            if (detail_mapping < 2) {
+                ImGui::DragFloat("z_min", &dbam_z_min, 1.f, 5.f, 1e4f);
+                ImGui::DragFloat("r", &dbam_r, 1e-2f, 1. + 1e-3f, 100.f);
+            }
+            if (detail_mapping == 0) {        // LOA
+            } else if (detail_mapping == 1) { // Depth-of-field
+                ImGui::DragFloat3("c", &dof_c.x);
+            } else if (detail_mapping == 2) { // Near-silhouette
+                ImGui::DragFloat("Magnitude", &near_silhouette_r, 1e-2f, 1e-3f,
+                                 1e4f);
+            } else if (detail_mapping == 3) { // Specular highlights
+                ImGui::DragFloat("Shininess", &specular_s, 1e-2f, 1e-3f, 1e4f);
+            }
+
             ImGui::Separator();
-            ImGui::Checkbox("Use Near-Silhouette (OBAM)", &use_obam);
-            ImGui::DragFloat("Near-Silhouette Magnitude", &obam_r, 0.1f, 0.1f,
-                             1e8f);
-            ImGui::Checkbox("Use Specular Based (OBAM)", &use_sbam);
-            ImGui::DragFloat("Specular Shininess", &obam_s, 0.1f, 1.1f, 1e8f);
-            ImGui::Separator();
-            ImGui::DragFloat("Normal Abstraction", &norm_fac, 0.01f, 0.f, 1.f);
+            ImGui::DragFloat("Normal Abstraction", &normal_factor, 1e-2f, 0.f,
+                             1.f);
             if (ImGui::Combo("Abstracted Shape", &abstracted_shape,
                              abstracted_shapes, 4)) {
                 mesh_pass.upload_mesh(xtr::load_mesh(mesh_files[selected_mesh],
@@ -197,62 +227,67 @@ int main(int argc, char *argv[]) {
                                    camera.get_position());
         mesh_pass_program.uni_vec3(mesh_pass_program.loc("uni_camera_dir"),
                                    camera.get_direction());
+
         mesh_pass_program.uni_1i(mesh_pass_program.loc("uni_use_obam"),
-                                 use_obam);
-        mesh_pass_program.uni_1i(mesh_pass_program.loc("uni_use_sbam"),
-                                 use_sbam);
-        mesh_pass_program.uni_1f(mesh_pass_program.loc("uni_r"), obam_r);
-        mesh_pass_program.uni_1f(mesh_pass_program.loc("uni_s"), obam_s);
-        mesh_pass.draw(model_matrix, camera.view_matrix(), projection_matrix,
-                       norm_fac);
+                                 detail_mapping > 1);
+        mesh_pass_program.uni_1i(mesh_pass_program.loc("uni_use_dof"),
+                                 detail_mapping % 2);
+        mesh_pass_program.uni_1i(mesh_pass_program.loc("uni_use_specular"),
+                                 detail_mapping % 2);
 
-        glReadBuffer(GL_COLOR_ATTACHMENT0);
-        std::vector<glm::vec4> z_buffer(app.get_screen_width() *
-                                        app.get_screen_height());
+        mesh_pass_program.uni_1f(mesh_pass_program.loc("uni_near_silhouette_r"),
+                                 near_silhouette_r);
+        mesh_pass_program.uni_1f(mesh_pass_program.loc("uni_specular_s"),
+                                 specular_s);
+
+        mesh_pass_program.uni_1f(mesh_pass_program.loc("uni_normal_factor"),
+                                 normal_factor);
+
+        mesh_pass.draw(model_matrix, camera.view_matrix(), projection_matrix);
+
+        glReadBuffer(GL_COLOR_ATTACHMENT3);
+        std::vector<glm::vec3> position_buffer(app.get_screen_width() *
+                                               app.get_screen_height());
         glReadPixels(0, 0, app.get_screen_width(), app.get_screen_height(),
-                     GL_RGBA, GL_FLOAT, z_buffer.data());
+                     GL_RGB, GL_FLOAT, position_buffer.data());
         framebuffer.unbind();
-
-        float z_max;
-        if (use_obam || use_sbam) {
-            z_max = 0.f;
-            for (const auto &pixel : z_buffer) {
-                if (pixel.x > 0) {
-                    z_max = std::max(pixel.x, z_max);
-                }
-            }
-        } else {
-            z_max = z_min * r;
+        if (c_pick.has_value()) {
+            int x = c_pick.value().x * app.get_screen_width();
+            int y = c_pick.value().y * app.get_screen_height();
+            dof_c = position_buffer[x + y * app.get_screen_width()];
         }
 
-        float z_c = z_buffer[app.get_screen_width() * z_c_pick.x +
-                             (app.get_screen_height() * (1 - z_c_pick.y)) *
-                                 app.get_screen_width()]
-                        .x;
-
         glActiveTexture(GL_TEXTURE0);
-        z_buffer_texture.bind();
+        nl_texture.bind();
         glActiveTexture(GL_TEXTURE1);
-        obam_texture.bind();
-        glActiveTexture(GL_TEXTURE2);
         tonemap_texture.bind();
+        glActiveTexture(GL_TEXTURE2);
+        z_buffer_texture.bind();
+        glActiveTexture(GL_TEXTURE3);
+        obam_texture.bind();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         const xtr::Program &screen_pass_program = screen_pass.get_program();
         screen_pass_program.use();
-        screen_pass_program.uni_1f(screen_pass_program.loc("uni_z_min"), z_min);
-        screen_pass_program.uni_1f(screen_pass_program.loc("uni_z_max"), z_max);
 
-        screen_pass_program.uni_1i(screen_pass_program.loc("uni_z_buffer"), 0);
-        screen_pass_program.uni_1i(screen_pass_program.loc("uni_obam"), 1);
-        screen_pass_program.uni_1i(screen_pass_program.loc("uni_tonemap"), 2);
+        screen_pass_program.uni_1i(screen_pass_program.loc("uni_nl"), 0);
+        screen_pass_program.uni_1i(screen_pass_program.loc("uni_tonemap"), 1);
+        screen_pass_program.uni_1i(screen_pass_program.loc("uni_z_buffer"), 2);
+        screen_pass_program.uni_1i(screen_pass_program.loc("uni_obam"), 3);
 
-        screen_pass_program.uni_1f(screen_pass_program.loc("uni_z_c"), z_c);
-        screen_pass_program.uni_1i(screen_pass_program.loc("uni_use_dof"),
-                                   use_dof);
         screen_pass_program.uni_1i(screen_pass_program.loc("uni_use_obam"),
-                                   use_obam);
-        screen_pass_program.uni_1i(screen_pass_program.loc("uni_use_sbam"),
-                                   use_sbam);
+                                   detail_mapping > 1);
+        screen_pass_program.uni_1i(screen_pass_program.loc("uni_use_dof"),
+                                   detail_mapping % 2);
+        screen_pass_program.uni_1i(screen_pass_program.loc("uni_use_specular"),
+                                   detail_mapping % 2);
+
+        screen_pass_program.uni_1f(screen_pass_program.loc("uni_dbam_z_min"),
+                                   dbam_z_min);
+        screen_pass_program.uni_1f(screen_pass_program.loc("uni_dbam_r"),
+                                   dbam_r);
+        screen_pass_program.uni_1f(screen_pass_program.loc("uni_dof_z_c"),
+                                   glm::length(dof_c - camera.get_position()));
+
         screen_pass.draw();
 
         app.end_frame();
