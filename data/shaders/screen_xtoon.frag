@@ -44,4 +44,5 @@ void main()
     else {
         frag_color = texture(uni_tonemap, vec2(nl, 1. - dbam));
     }
+    // frag_color = vec4(vec3(obam), 1.f);
 }

@@ -174,12 +174,12 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
         }
     } else if (abstracted_shape == 1) { // ellipse
         for (int i = 0; i < ps.size(); ++i) {
-            ans[i] = glm::normalize(glm::normalize(ps[i] - bb_center) *
+            ans[i] = glm::normalize(glm::normalize(ps[i]) *
                                     bb_dimension);
         }
     } else if (abstracted_shape == 2) { // cylinder
         for (int i = 0; i < ps.size(); ++i) {
-            ans[i] = ps[i] - bb_center;
+            ans[i] = ps[i];
             if (bb_dimension.x > bb_dimension.y &&
                 bb_dimension.x > bb_dimension.z) {
                 ans[i].x = 0;
@@ -194,7 +194,7 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
         }
     } else if (abstracted_shape == 3) { // sphere
         for (int i = 0; i < ps.size(); ++i) {
-            ans[i] = glm::normalize(ps[i] - bb_center);
+            ans[i] = glm::normalize(ps[i]);
         }
     }
     for (int i = 0; i < ps.size(); ++i) {
