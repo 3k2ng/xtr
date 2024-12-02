@@ -48,10 +48,10 @@ class TurnTableCamera {
 
     inline void imgui() {
         if (ImGui::TreeNode("Camera")) {
-            ImGui::InputFloat3("origin", (float *)&_origin);
-            ImGui::InputFloat("r", &_radial_distance, 1.f);
-            ImGui::InputFloat("theta", &_polar_angle, 1e-2f);
-            ImGui::InputFloat("phi", &_azimuthal_angle, 1e-2f);
+            ImGui::DragFloat3("origin", (float *)&_origin);
+            ImGui::DragFloat("r", &_radial_distance, 1.f);
+            ImGui::DragFloat("theta", &_polar_angle, 1e-2f);
+            ImGui::DragFloat("phi", &_azimuthal_angle, 1e-2f);
             ImGui::TreePop();
         }
     }

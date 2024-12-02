@@ -17,11 +17,11 @@ uniform bool uni_use_specular;
 uniform float uni_near_silhouette_r; // near-silhouette r
 uniform float uni_specular_s; // specular s
 
-vec3 light_dir = normalize(vec3(1.));
+uniform vec3 uni_light_dir;
 
 void main()
 {
-    nl = dot(frag_normal, light_dir);
+    nl = dot(frag_normal, uni_light_dir);
     if (uni_use_dof) {
         z_buffer = length(frag_position - uni_camera_pos);
     }
@@ -29,7 +29,7 @@ void main()
         z_buffer = dot(normalize(uni_camera_dir), frag_position - uni_camera_pos);
     }
     if (uni_use_specular) {
-        vec3 reflected_light_dir = 2. * dot(light_dir, frag_normal) * frag_normal - light_dir;
+        vec3 reflected_light_dir = 2. * dot(uni_light_dir, frag_normal) * frag_normal - uni_light_dir;
         obam = pow(abs(dot(uni_camera_dir, reflected_light_dir)), uni_specular_s);
     }
     else {

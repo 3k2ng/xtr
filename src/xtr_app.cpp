@@ -1,6 +1,7 @@
 #include <xtr_app.h>
 namespace xtr {
-App::App(int width, int height) : _running{true}, enable_imgui{false} {
+App::App(int width, int height)
+    : _running{true}, enable_imgui{false}, _window_resized{false} {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
     IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG);
 
@@ -12,7 +13,7 @@ App::App(int width, int height) : _running{true}, enable_imgui{false} {
 
     _window = SDL_CreateWindow("XToon Renderer", SDL_WINDOWPOS_UNDEFINED,
                                SDL_WINDOWPOS_UNDEFINED, width, height,
-                               SDL_WINDOW_OPENGL);
+                               SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     _screen_width = width;
     _screen_height = height;
 
@@ -45,6 +46,7 @@ void App::update_input() {
     }
     _mouse_delta = {};
     _wheel_delta = {};
+    _window_resized = false;
     while (SDL_PollEvent(&event)) {
         ImGui_ImplSDL2_ProcessEvent(&event);
         if (!io.WantCaptureMouse &&
@@ -92,6 +94,7 @@ void App::update_input() {
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
                     _screen_width = event.window.data1;
                     _screen_height = event.window.data2;
+                    _window_resized = true;
                 }
             }
         }

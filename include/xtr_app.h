@@ -48,6 +48,8 @@ class App {
     inline const glm::vec2 get_mouse_delta() const { return _mouse_delta; }
     inline const glm::vec2 get_wheel_delta() const { return _wheel_delta; }
 
+    inline const bool is_window_resized() const { return _window_resized; }
+
     inline const int get_screen_width() const { return _screen_width; }
     inline const int get_screen_height() const { return _screen_height; }
 
@@ -62,6 +64,7 @@ class App {
         _key_repeated;
     std::unordered_map<unsigned char, bool> _button_pressed, _button_down;
     glm::vec2 _mouse_position, _mouse_delta, _wheel_delta;
+    bool _window_resized;
     int _screen_width, _screen_height;
 };
 } // namespace xtr

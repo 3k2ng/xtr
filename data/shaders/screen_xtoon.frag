@@ -34,7 +34,7 @@ void main()
             dbam = log(z / dof_z_max) / log(dof_z_min / dof_z_max);
         }
     } else {
-        dbam = log(z / uni_dbam_z_min) / log(uni_dbam_r * uni_dbam_z_min / uni_dbam_z_min);
+        dbam = 1. - log(z / uni_dbam_z_min) / log(uni_dbam_r * uni_dbam_z_min / uni_dbam_z_min);
     }
     float obam = texture(uni_obam, uv).x;
     // textures are flipped vertically

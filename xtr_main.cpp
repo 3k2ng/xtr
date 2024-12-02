@@ -121,19 +121,57 @@ int main(int argc, char *argv[]) {
     int abstracted_shape = 0;
     float normal_factor = 0.;
 
+    float light_theta, light_phi;
+
     app.enable_imgui = true;
     while (app.is_running()) {
         app.update_input();
+
+        if (app.is_window_resized()) {
+            nl_texture.bind();
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, app.get_screen_width(),
+                         app.get_screen_height(), 0, GL_RED, GL_FLOAT, nullptr);
+            nl_texture.unbind();
+
+            z_buffer_texture.bind();
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, app.get_screen_width(),
+                         app.get_screen_height(), 0, GL_RED, GL_FLOAT, nullptr);
+            z_buffer_texture.unbind();
+
+            obam_texture.bind();
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, app.get_screen_width(),
+                         app.get_screen_height(), 0, GL_RED, GL_FLOAT, nullptr);
+            obam_texture.unbind();
+
+            position_texture.bind();
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, app.get_screen_width(),
+                         app.get_screen_height(), 0, GL_RGB, GL_FLOAT, nullptr);
+            position_texture.unbind();
+
+            renderbuffer.bind();
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT,
+                                  app.get_screen_width(),
+                                  app.get_screen_height());
+            renderbuffer.unbind();
+
+            glViewport(0, 0, app.get_screen_width(), app.get_screen_height());
+        }
+
+        projection_matrix =
+            glm::perspective(glm::half_pi<float>(),
+                             static_cast<float>(app.get_screen_width()) /
+                                 static_cast<float>(app.get_screen_height()),
+                             1e-3f, 1e4f);
         if (app.is_button_down(SDL_BUTTON_LEFT)) {
-            camera.set_phi(camera.get_phi() + (app.get_mouse_delta().x * 1e1f));
+            camera.set_phi(camera.get_phi() + (app.get_mouse_delta().x * 30.f));
             camera.set_theta(camera.get_theta() +
-                             (app.get_mouse_delta().y * 1e1f));
+                             (app.get_mouse_delta().y * 30.f));
         }
         std::optional<glm::vec2> c_pick = std::nullopt;
         if (app.is_button_down(SDL_BUTTON_RIGHT)) {
             c_pick = app.get_mouse_position();
         }
-        camera.set_r(camera.get_r() - (app.get_wheel_delta().y * 1e1f));
+        camera.set_r(camera.get_r() - (app.get_wheel_delta().y * 30.f));
         const glm::vec3 origin_delta = {
             app.is_key_down(SDLK_RIGHT) - app.is_key_down(SDLK_LEFT),
             app.is_key_down(SDLK_UP) - app.is_key_down(SDLK_DOWN),
@@ -213,11 +251,14 @@ int main(int argc, char *argv[]) {
                                                      abstracted_shape,
                                                      mesh_y_up, mesh_x_front));
             }
+            ImGui::Separator();
+            ImGui::Text("Light Direction");
+            ImGui::DragFloat("theta", &light_theta, 1e-2f);
+            ImGui::DragFloat("phi", &light_phi, 1e-2f);
             ImGui::End();
             ImGui::Render();
         }
 
-        glViewport(0, 0, app.get_screen_width(), app.get_screen_height());
         framebuffer.bind();
         glClearColor(0.f, 0.f, 0.f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -243,6 +284,13 @@ int main(int argc, char *argv[]) {
         mesh_pass_program.uni_1f(mesh_pass_program.loc("uni_normal_factor"),
                                  normal_factor);
 
+        mesh_pass_program.uni_vec3(mesh_pass_program.loc("uni_light_dir"),
+                                   glm::vec3{
+                                       sinf(light_theta) * cosf(light_phi),
+                                       cosf(light_theta),
+                                       sinf(light_theta) * sinf(light_phi),
+                                   });
+
         mesh_pass.draw(model_matrix, camera.view_matrix(), projection_matrix);
 
         glReadBuffer(GL_COLOR_ATTACHMENT3);
@@ -253,7 +301,7 @@ int main(int argc, char *argv[]) {
         framebuffer.unbind();
         if (c_pick.has_value()) {
             int x = c_pick.value().x * app.get_screen_width();
-            int y = c_pick.value().y * app.get_screen_height();
+            int y = (1. - c_pick.value().y) * app.get_screen_height();
             dof_c = position_buffer[x + y * app.get_screen_width()];
         }
 
