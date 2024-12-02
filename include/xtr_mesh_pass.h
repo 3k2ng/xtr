@@ -12,7 +12,7 @@ class MeshPass {
         _array.bind();
         _vertex_buffer.bind();
         _element_buffer.bind();
-        attrib_mesh(0, 1);
+        attrib_mesh(0, 1, 2);
         _array.unbind();
     }
 

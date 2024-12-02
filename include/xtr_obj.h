@@ -91,8 +91,8 @@ load_ply_file(const std::filesystem::path &file_path) {
 }
 
 inline Mesh load_mesh(const std::filesystem::path &file_path,
-                      const bool calculate_vertex_normal,
-                      const bool y_up = true, const bool x_front = true) {
+                      const int abstracted_shape, const bool y_up = true,
+                      const bool x_front = true) {
     std::string file_extension = file_path.filename().extension();
     std::pair<std::vector<glm::vec3>, std::vector<int>> loaded_file;
     std::vector<glm::vec3> ps;
@@ -106,7 +106,7 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
     }
     ps.resize(loaded_file.first.size());
 
-    glm::vec3 bb_lowest  = loaded_file.first[0];
+    glm::vec3 bb_lowest = loaded_file.first[0];
     glm::vec3 bb_highest = loaded_file.first[0];
     for (int i = 1; i < ps.size(); ++i) {
         bb_highest.x = std::max(bb_highest.x, loaded_file.first[i].x);
@@ -119,76 +119,50 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
     glm::vec3 bb_center = (bb_highest + bb_lowest) / glm::vec3(2.0);
     float bb_diag_size = glm::length(bb_highest - bb_lowest);
     float bb_scalar = 1000.f / bb_diag_size;
-    
+
     for (int i = 0; i < ps.size(); ++i) {
         if (y_up) {
-            ps[i].y = loaded_file.first[i].y-bb_center.y;
+            ps[i].y = loaded_file.first[i].y - bb_center.y;
             if (x_front) {
-                ps[i].x = loaded_file.first[i].x-bb_center.x;
-                ps[i].z = loaded_file.first[i].z-bb_center.z;
+                ps[i].x = loaded_file.first[i].x - bb_center.x;
+                ps[i].z = loaded_file.first[i].z - bb_center.z;
             } else {
-                ps[i].x = loaded_file.first[i].z-bb_center.z;
-                ps[i].z = loaded_file.first[i].x-bb_center.x;
+                ps[i].x = loaded_file.first[i].z - bb_center.z;
+                ps[i].z = loaded_file.first[i].x - bb_center.x;
             }
         } else {
-            ps[i].y = loaded_file.first[i].z-bb_center.z;
+            ps[i].y = loaded_file.first[i].z - bb_center.z;
             if (x_front) {
-                ps[i].x = loaded_file.first[i].x-bb_center.x;
-                ps[i].z = loaded_file.first[i].y-bb_center.y;
+                ps[i].x = loaded_file.first[i].x - bb_center.x;
+                ps[i].z = loaded_file.first[i].y - bb_center.y;
             } else {
-                ps[i].x = loaded_file.first[i].y-bb_center.y;
-                ps[i].z = loaded_file.first[i].x-bb_center.x;
+                ps[i].x = loaded_file.first[i].y - bb_center.y;
+                ps[i].z = loaded_file.first[i].x - bb_center.x;
             }
         }
     }
     i_p = loaded_file.second;
-    if (calculate_vertex_normal) {
-        std::vector<glm::vec3> vns(ps.size(), glm::vec3{});
-        for (int i = 0; i < i_p.size(); i += 3) {
-            glm::vec3 u = ps[i_p[i + 1]] - ps[i_p[i]],
-                      v = ps[i_p[i + 2]] - ps[i_p[i]];
-            glm::vec3 n = glm::cross(u, v);
-            vns[i_p[i]] += n;
-            vns[i_p[i + 1]] += n;
-            vns[i_p[i + 2]] += n;
-        }
-        std::vector<Vertex> vertices(ps.size());
-        for (int i = 0; i < ps.size(); ++i) {
-            vns[i] = glm::normalize(vns[i]);
-            vertices[i] = {.position=ps[i]*bb_scalar, .normal=vns[i]};
-        }
-        return {.vertices=vertices, .indices=i_p};
-    } else {
-        auto cmp = [](const glm::vec3 lhs, const glm::vec3 rhs) {
-            return lhs.x < rhs.x || (lhs.x == rhs.x && lhs.y < rhs.y) ||
-                   (lhs.x == rhs.x && lhs.y == rhs.y && lhs.z < rhs.z);
-        };
-        std::vector<glm::vec3> fns;
-        std::map<glm::vec3, int, decltype(cmp)> fn2id(cmp);
-        std::vector<int> i_fn(i_p.size());
-        for (int i = 0; i < i_fn.size(); i += 3) {
-            glm::vec3 u = ps[i_p[i + 1]] - ps[i_p[i]],
-                      v = ps[i_p[i + 2]] - ps[i_p[i]];
-            glm::vec3 fn = glm::normalize(glm::cross(u, v));
-            if (fn2id.find(fn) == fn2id.end()) {
-                fn2id[fn] = fns.size();
-                fns.push_back(fn);
-            }
-            i_fn[i] = fn2id[fn];
-            i_fn[i + 1] = fn2id[fn];
-            i_fn[i + 2] = fn2id[fn];
-        }
-        std::vector<Vertex> vertices;
-        std::vector<int> indices(i_p.size());
-        std::map<std::pair<int, int>, int> i2i;
-        for (int i = 0; i < indices.size(); ++i) {
-            if (i2i.find({i_p[i], i_fn[i]}) == i2i.end()) {
-                i2i[{i_p[i], i_fn[i]}] = vertices.size();
-                vertices.push_back({ps[i_p[i]]*bb_scalar, fns[i_fn[i]]});
-            }
-            indices[i] = i2i[{i_p[i], i_fn[i]}];
-        }
-        return {vertices, indices};
+    Mesh mesh;
+    std::vector<glm::vec3> vns(ps.size(), glm::vec3{});
+    for (int i = 0; i < i_p.size(); i += 3) {
+        glm::vec3 u = ps[i_p[i + 1]] - ps[i_p[i]],
+                  v = ps[i_p[i + 2]] - ps[i_p[i]];
+        glm::vec3 n = glm::cross(u, v);
+        vns[i_p[i]] += n;
+        vns[i_p[i + 1]] += n;
+        vns[i_p[i + 2]] += n;
     }
+    std::vector<Vertex> vertices(ps.size());
+    for (int i = 0; i < ps.size(); ++i) {
+        vns[i] = glm::normalize(vns[i]);
+        vertices[i] = {ps[i] * bb_scalar, vns[i]};
+    }
+    mesh = {vertices, i_p};
+    if (abstracted_shape == 0) {        // smooth
+    } else if (abstracted_shape == 1) { // ellipse
+    } else if (abstracted_shape == 2) { // cylinder
+    } else if (abstracted_shape == 3) { // sphere
+    }
+    return mesh;
 }
 } // namespace xtr

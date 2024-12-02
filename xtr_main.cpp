@@ -1,13 +1,4 @@
-#define MODEL "Venus"
-#define TEXTURE "10c"
-
-#define SMOOTHED 0
-#define ELLIPSE 1
-#define CYLINDER 2
-#define SPHERE 3
-
-#include "glm/fwd.hpp"
-#include "imgui.h"
+#include <imgui.h>
 #include <xtr_app.h>
 #include <xtr_buffer.h>
 #include <xtr_camera.h>
@@ -26,20 +17,31 @@ int main(int argc, char *argv[]) {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-    xtr::ScreenPass screen_pass{"./data/shaders/screen_loa.frag"};
+    xtr::ScreenPass screen_pass{"./data/shaders/screen_xtoon.frag"};
     xtr::MeshPass mesh_pass{"./data/shaders/buffer_pass.frag"};
     xtr::TurnTableCamera camera{1000.f, 11.f / 24.f * glm::pi<float>(), 0., {}};
     glm::mat4 model_matrix{1.};
     glm::mat4 projection_matrix =
         glm::perspective(glm::half_pi<float>(), 4.f / 3.f, 1e-3f, 1e4f);
 
-    if (argc > 1) {
-        mesh_pass.upload_mesh(xtr::load_mesh(
-            std::string("./data/models/") + argv[1] + ".ply", true));
-    } else {
-        mesh_pass.upload_mesh(xtr::load_mesh(
-            std::string("./data/models/") + MODEL + ".ply", true));
+    const std::filesystem::path mesh_directory = "./data/models";
+    std::vector<std::filesystem::path> mesh_files;
+    for (const auto &file :
+         std::filesystem::directory_iterator{mesh_directory}) {
+        mesh_files.push_back(file);
     }
+
+    mesh_pass.upload_mesh(xtr::load_mesh(mesh_files[0], 0));
+
+    const std::filesystem::path texture_directory = "./data/textures";
+    std::vector<std::filesystem::path> texture_files;
+    for (const auto &file :
+         std::filesystem::directory_iterator{texture_directory}) {
+        texture_files.push_back(file);
+    }
+
+    const char *abstracted_shapes[] = {"Smooth", "Ellipse", "Cylinder",
+                                       "Sphere"};
 
     xtr::Framebuffer framebuffer;
 
@@ -58,8 +60,7 @@ int main(int argc, char *argv[]) {
     obam_texture.unbind();
 
     xtr::Texture tonemap_texture{GL_TEXTURE_2D};
-    tonemap_texture.load_file(std::string("./data/textures/fig-") + TEXTURE +
-                              ".ppm");
+    tonemap_texture.load_file(texture_files[0]);
 
     xtr::Renderbuffer renderbuffer;
     renderbuffer.bind();
@@ -81,20 +82,20 @@ int main(int argc, char *argv[]) {
     glDrawBuffers(2, attachments);
     framebuffer.unbind();
 
-    char imgui_mesh_name[50] = {"Venus"};
-    char imgui_texture_name[30] = {"fig-9e"};
+    int selected_mesh = 0;
+    int selected_texture = 0;
 
     float z_min = 100.f;
     float r = 2.f;
     float obam_r = 1.f;
     float obam_s = 10.f;
     float norm_fac = 0.f;
-    glm::vec3 z_c = glm::vec3(0.f);
+    glm::vec2 z_c_pick = glm::vec2(.5f, .5f);
     bool use_dof = false;
     bool use_obam = false;
     bool use_sbam = false;
 
-    int norm_type = SMOOTHED;
+    int abstracted_shape = 0;
 
     app.enable_imgui = true;
     while (app.is_running()) {
@@ -103,6 +104,9 @@ int main(int argc, char *argv[]) {
             camera.set_phi(camera.get_phi() + (app.get_mouse_delta().x * 1e1f));
             camera.set_theta(camera.get_theta() +
                              (app.get_mouse_delta().y * 1e1f));
+        }
+        if (app.is_button_down(SDL_BUTTON_RIGHT)) {
+            z_c_pick = app.get_mouse_position();
         }
         camera.set_r(camera.get_r() - (app.get_wheel_delta().y * 1e1f));
         const glm::vec3 origin_delta = {
@@ -116,26 +120,45 @@ int main(int argc, char *argv[]) {
             ImGui::Begin("panel");
             camera.imgui();
             ImGui::Separator();
-            ImGui::InputTextWithHint("Mesh Name", "Venus", imgui_mesh_name, 50);
-            if (ImGui::Button("Load Mesh")) {
-                mesh_pass.upload_mesh(xtr::load_mesh(
-                    std::string("./data/models/") + imgui_mesh_name + ".ply",
-                    true));
+            if (ImGui::BeginCombo(
+                    "Mesh", mesh_files[selected_mesh].filename().c_str())) {
+                for (int i = 0; i < mesh_files.size(); ++i) {
+                    const bool is_selected = selected_mesh == i;
+                    if (ImGui::Selectable(mesh_files[i].filename().c_str(),
+                                          is_selected)) {
+                        selected_mesh = i;
+                        mesh_pass.upload_mesh(
+                            xtr::load_mesh(mesh_files[i], abstracted_shape));
+                    }
+                    if (is_selected) {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
             }
             ImGui::Separator();
-            ImGui::InputTextWithHint("Texture Name", "fig-9e",
-                                     imgui_texture_name, 30);
-            if (ImGui::Button("Load Texture")) {
-                std::string texture_filepath = std::string("./data/textures/") +
-                                               imgui_texture_name + ".ppm";
-                if (std::filesystem::exists(texture_filepath)) {
-                    tonemap_texture.load_file(texture_filepath);
+
+            if (ImGui::BeginCombo(
+                    "Texture",
+                    texture_files[selected_texture].filename().c_str())) {
+                for (int i = 0; i < texture_files.size(); ++i) {
+                    const bool is_selected = selected_texture == i;
+                    if (ImGui::Selectable(texture_files[i].filename().c_str(),
+                                          is_selected)) {
+                        selected_texture = i;
+                        tonemap_texture.load_file(texture_files[i]);
+                    }
+                    if (is_selected) {
+                        ImGui::SetItemDefaultFocus();
+                    }
                 }
+                ImGui::EndCombo();
             }
+
             ImGui::Separator();
             ImGui::DragFloat("z_min", &z_min, 5.f, 5.f, 1e8f);
             ImGui::DragFloat("r", &r, 0.05f, 1.05f, 1e8f);
-            ImGui::DragFloat3("z_c", &z_c.x);
+            ImGui::LabelText("z_c_pick", "%f, %f", z_c_pick.x, z_c_pick.y);
             ImGui::Checkbox("Use Depth of Field", &use_dof);
             ImGui::Separator();
             ImGui::Checkbox("Use Near-Silhouette (OBAM)", &use_obam);
@@ -145,10 +168,11 @@ int main(int argc, char *argv[]) {
             ImGui::DragFloat("Specular Shininess", &obam_s, 0.1f, 1.1f, 1e8f);
             ImGui::Separator();
             ImGui::DragFloat("Normal Abstraction", &norm_fac, 0.01f, 0.f, 1.f);
-            ImGui::RadioButton("Smoothed", &norm_type, SMOOTHED);
-            ImGui::RadioButton("Ellipse", &norm_type, ELLIPSE);
-            ImGui::RadioButton("Cylinder", &norm_type, CYLINDER);
-            ImGui::RadioButton("Sphere", &norm_type, SPHERE);
+            if (ImGui::Combo("Abstracted Shape", &abstracted_shape,
+                             abstracted_shapes, 4)) {
+                mesh_pass.upload_mesh(xtr::load_mesh(mesh_files[selected_mesh],
+                                                     abstracted_shape));
+            }
             ImGui::End();
             ImGui::Render();
         }
@@ -169,7 +193,8 @@ int main(int argc, char *argv[]) {
                                  use_sbam);
         mesh_pass_program.uni_1f(mesh_pass_program.loc("uni_r"), obam_r);
         mesh_pass_program.uni_1f(mesh_pass_program.loc("uni_s"), obam_s);
-        mesh_pass.draw(model_matrix, camera.view_matrix(), projection_matrix, norm_fac);
+        mesh_pass.draw(model_matrix, camera.view_matrix(), projection_matrix,
+                       norm_fac);
 
         glReadBuffer(GL_COLOR_ATTACHMENT0);
         std::vector<glm::vec4> z_buffer(app.get_screen_width() *
@@ -180,17 +205,20 @@ int main(int argc, char *argv[]) {
 
         float z_max;
         if (use_obam || use_sbam) {
-            // z_max = 0.f, z_min = 1e32f;
             z_max = 0.f;
             for (const auto &pixel : z_buffer) {
                 if (pixel.x > 0) {
                     z_max = std::max(pixel.x, z_max);
-                    // z_min = std::min(pixel.x, z_min);
                 }
             }
         } else {
             z_max = z_min * r;
         }
+
+        float z_c = z_buffer[app.get_screen_width() * z_c_pick.x +
+                             (app.get_screen_height() * z_c_pick.y) *
+                                 app.get_screen_width()]
+                        .x;
 
         glActiveTexture(GL_TEXTURE0);
         z_buffer_texture.bind();
@@ -208,8 +236,7 @@ int main(int argc, char *argv[]) {
         screen_pass_program.uni_1i(screen_pass_program.loc("uni_obam"), 1);
         screen_pass_program.uni_1i(screen_pass_program.loc("uni_tonemap"), 2);
 
-        screen_pass_program.uni_1f(screen_pass_program.loc("uni_z_c"),
-                                   glm::length(z_c - camera.get_position()));
+        screen_pass_program.uni_1f(screen_pass_program.loc("uni_z_c"), z_c);
         screen_pass_program.uni_1i(screen_pass_program.loc("uni_use_dof"),
                                    use_dof);
         screen_pass_program.uni_1i(screen_pass_program.loc("uni_use_obam"),

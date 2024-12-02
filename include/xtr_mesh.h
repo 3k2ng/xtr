@@ -7,6 +7,7 @@ namespace xtr {
 struct Vertex {
     glm::vec3 position;
     glm::vec3 normal;
+    glm::vec3 abstracted_normal;
 };
 struct Mesh {
     std::vector<Vertex> vertices;
@@ -21,7 +22,7 @@ inline void bind_mesh(const Mesh &mesh, const Buffer &vertex_buffer,
     index_buffer.data(GLsizeiptr(mesh.indices.size() * sizeof(int)),
                       mesh.indices.data(), GL_STATIC_DRAW);
 }
-inline void attrib_mesh(int i_pos, int i_norm) {
+inline void attrib_mesh(int i_pos, int i_norm, int i_anorm) {
     if (i_pos >= 0) {
         glVertexAttribPointer(i_pos, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                               (void *)offsetof(Vertex, position));
@@ -31,6 +32,11 @@ inline void attrib_mesh(int i_pos, int i_norm) {
         glVertexAttribPointer(i_norm, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                               (void *)offsetof(Vertex, normal));
         glEnableVertexAttribArray(i_norm);
+    }
+    if (i_anorm >= 0) {
+        glVertexAttribPointer(i_anorm, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                              (void *)offsetof(Vertex, abstracted_normal));
+        glEnableVertexAttribArray(i_anorm);
     }
 }
 } // namespace xtr
