@@ -125,8 +125,6 @@ int main(int argc, char *argv[]) {
 
     app.enable_imgui = true;
     while (app.is_running()) {
-        app.update_input();
-
         if (app.is_window_resized()) {
             nl_texture.bind();
             glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, app.get_screen_width(),

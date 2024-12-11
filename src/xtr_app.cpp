@@ -1,7 +1,6 @@
 #include <xtr_app.h>
 namespace xtr {
-App::App(int width, int height)
-    : _running{true}, enable_imgui{false}, _window_resized{false} {
+App::App(int width, int height) : enable_imgui{false}, _window_resized{false} {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
     IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG);
 
@@ -35,7 +34,7 @@ App::~App() {
     IMG_Quit();
     SDL_Quit();
 }
-void App::update_input() {
+const bool App::is_running() {
     ImGuiIO &io = ImGui::GetIO();
     SDL_Event event;
     for (auto &[k, v] : _key_pressed) {
@@ -52,7 +51,7 @@ void App::update_input() {
         if (!io.WantCaptureMouse &&
             !(io.WantCaptureKeyboard && io.WantTextInput)) {
             if (event.type == SDL_QUIT) {
-                _running = false;
+                return false;
             } else if (event.type == SDL_KEYUP) {
                 const SDL_Keycode k = event.key.keysym.sym;
                 _key_down[k] = false;
@@ -99,6 +98,7 @@ void App::update_input() {
             }
         }
     }
+    return true;
 }
 void App::start_frame() const {
     if (enable_imgui) {

@@ -17,7 +17,7 @@ class App {
     App &operator=(const App &) = delete;
     ~App();
 
-    inline const bool is_running() const { return _running; }
+    const bool is_running();
 
     void update_input();
     void start_frame() const;
@@ -59,7 +59,6 @@ class App {
     SDL_Window *_window;
     SDL_GLContext _context;
 
-    bool _running;
     std::unordered_map<SDL_Keycode, bool> _key_pressed, _key_down,
         _key_repeated;
     std::unordered_map<unsigned char, bool> _button_pressed, _button_down;
