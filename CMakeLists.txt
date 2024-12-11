@@ -50,7 +50,6 @@ FetchContent_MakeAvailable(tinyobjloader)
 
 add_executable(${PROJECT_NAME}
     "./xtr_main.cpp"
-    "./src/xtr_app.cpp"
     "./external/glad/src/gl.c"
     "./external/miniply/src/miniply.cpp"
     "${imgui_SOURCE_DIR}/imgui.cpp"
