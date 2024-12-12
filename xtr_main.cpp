@@ -198,8 +198,8 @@ int main(int argc, char *argv[]) {
                 }
                 ImGui::EndCombo();
             }
-            if (ImGui::Checkbox("mesh_y_up", &mesh_y_up) ||
-                ImGui::Checkbox("mesh_x_front", &mesh_x_front)) {
+            if (ImGui::Checkbox("y_up", &mesh_y_up) ||
+                ImGui::Checkbox("x_front", &mesh_x_front)) {
                 mesh_pass.upload_mesh(xtr::load_mesh(mesh_files[selected_mesh],
                                                      abstracted_shape,
                                                      mesh_y_up, mesh_x_front));
