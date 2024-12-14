@@ -3,45 +3,74 @@ layout(location = 0) out vec4 frag_color;
 
 in vec2 uv;
 
-uniform sampler2D uni_nl;
+uniform sampler2D uni_position;
+uniform sampler2D uni_normal;
+uniform sampler2D uni_id_map;
 uniform sampler2D uni_tonemap;
-uniform sampler2D uni_z_buffer;
-uniform sampler2D uni_obam;
 
-uniform bool uni_use_obam;
-uniform bool uni_use_dof;
-uniform bool uni_use_specular;
+uniform int uni_id;
+
+uniform vec3 uni_camera_pos;
+uniform vec3 uni_camera_dir;
+
+uniform int uni_detail_mapping;
+
+uniform float uni_near_silhouette_r; // near-silhouette r
+uniform float uni_specular_s; // specular s
 
 uniform float uni_dbam_z_min;
 uniform float uni_dbam_r;
 uniform float uni_dof_z_c;
 
+uniform vec3 uni_light_dir;
+
 void main()
 {
-    float z = texture(uni_z_buffer, uv).x;
-    if (z <= 0.) discard;
+    int id = int(texture(uni_id_map, uv).x);
+    if (uni_id != id) discard;
 
-    float nl = texture(uni_nl, uv).x;
-    float dbam;
-    if (uni_use_dof) {
-        if (z < uni_dof_z_c) {
-            float dof_z_min = uni_dof_z_c - uni_dbam_z_min;
-            float dof_z_max = uni_dof_z_c - uni_dbam_r * uni_dbam_z_min;
-            dbam = 1. - log(z / dof_z_min) / log(dof_z_max / dof_z_min);
-        } else {
-            float dof_z_min = uni_dof_z_c + uni_dbam_z_min;
-            float dof_z_max = uni_dof_z_c + uni_dbam_r * uni_dbam_z_min;
-            dbam = log(z / dof_z_max) / log(dof_z_min / dof_z_max);
-        }
-    } else {
-        dbam = 1. - log(z / uni_dbam_z_min) / log(uni_dbam_r * uni_dbam_z_min / uni_dbam_z_min);
-    }
-    float obam = texture(uni_obam, uv).x;
-    // textures are flipped vertically
-    if (uni_use_obam) {
-        frag_color = texture(uni_tonemap, vec2(nl, 1. - obam));
-    }
-    else {
+    vec3 position = texture(uni_position, uv).xyz;
+    vec3 normal = texture(uni_normal, uv).xyz;
+    float nl = dot(normal, uni_light_dir);
+
+    // level of abstraction
+    if (uni_detail_mapping == 0) {
+        float z = dot(normalize(uni_camera_dir), position - uni_camera_pos);
+        float z_min = uni_dbam_z_min;
+        float z_max = uni_dbam_z_min * uni_dbam_r;
+        float dbam = 1. - log(z / z_min) / log(z_max / z_min);
+        // textures are flipped vertically
         frag_color = texture(uni_tonemap, vec2(nl, 1. - dbam));
     }
+    // depth of field
+    else if (uni_detail_mapping == 1) {
+        float z = length(position - uni_camera_pos);
+        float dbam = 0.;
+        if (z < uni_dof_z_c) {
+            float z_min_mi = uni_dof_z_c - uni_dbam_z_min;
+            float z_max_mi = uni_dof_z_c - uni_dbam_r * uni_dbam_z_min;
+            dbam = 1. - log(z / z_min_mi) / log(z_max_mi / z_min_mi);
+        }
+        else {
+            float z_min_pl = uni_dof_z_c + uni_dbam_z_min;
+            float z_max_pl = uni_dof_z_c + uni_dbam_r * uni_dbam_z_min;
+            dbam = log(z / z_max_pl) / log(z_min_pl / z_max_pl);
+        }
+        // textures are flipped vertically
+        frag_color = texture(uni_tonemap, vec2(nl, 1. - dbam));
+    }
+    // near-silhouette
+    else if (uni_detail_mapping == 2) {
+        float obam = pow(abs(dot(normal, uni_camera_dir)), uni_near_silhouette_r);
+        // textures are flipped vertically
+        frag_color = texture(uni_tonemap, vec2(nl, 1. - obam));
+    }
+    // specular
+    else if (uni_detail_mapping == 3) {
+        vec3 reflected_light_dir = 2. * dot(uni_light_dir, normal) * normal - uni_light_dir;
+        float obam = pow(abs(dot(uni_camera_dir, reflected_light_dir)), uni_specular_s);
+        // textures are flipped vertically
+        frag_color = texture(uni_tonemap, vec2(nl, 1. - obam));
+    }
+    else discard;
 }

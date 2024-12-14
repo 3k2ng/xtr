@@ -120,7 +120,6 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
     glm::vec3 bb_center = (bb_highest + bb_lowest) / glm::vec3(2.0);
     glm::vec3 bb_dimension = glm::abs(bb_highest - bb_lowest);
     float bb_diag_size = glm::length(bb_highest - bb_lowest);
-    float bb_scalar = 1000.f / bb_diag_size;
 
     for (int i = 0; i < ps.size(); ++i) {
         if (y_up) {
@@ -174,8 +173,7 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
         }
     } else if (abstracted_shape == 1) { // ellipse
         for (int i = 0; i < ps.size(); ++i) {
-            ans[i] = glm::normalize(glm::normalize(ps[i]) *
-                                    bb_dimension);
+            ans[i] = glm::normalize(glm::normalize(ps[i]) * bb_dimension);
         }
     } else if (abstracted_shape == 2) { // cylinder
         for (int i = 0; i < ps.size(); ++i) {
@@ -198,7 +196,7 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
         }
     }
     for (int i = 0; i < ps.size(); ++i) {
-        vertices[i] = {ps[i] * bb_scalar, vns[i], ans[i]};
+        vertices[i] = {ps[i] / bb_diag_size, vns[i], ans[i]};
     }
     return {vertices, indices};
 }

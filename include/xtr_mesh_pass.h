@@ -5,9 +5,10 @@
 namespace xtr {
 class MeshPass {
   public:
-    MeshPass(const std::filesystem::path &frag)
-        : _program{load_program("./data/shaders/mesh.vert", frag)}, _array{},
-          _vertex_buffer{GL_ARRAY_BUFFER},
+    MeshPass()
+        : _program{load_program("./data/shaders/mesh.vert",
+                                "./data/shaders/mesh.frag")},
+          _array{}, _vertex_buffer{GL_ARRAY_BUFFER},
           _element_buffer{GL_ELEMENT_ARRAY_BUFFER} {
         _array.bind();
         _vertex_buffer.bind();
@@ -25,11 +26,14 @@ class MeshPass {
 
     inline void draw(const glm::mat4 &model_matrix,
                      const glm::mat4 &view_matrix,
-                     const glm::mat4 &projection_matrix) const {
+                     const glm::mat4 &projection_matrix,
+                     const float normal_factor, const int id) const {
         _program.use();
         _program.uni_mat4(_program.loc("uni_model"), model_matrix);
         _program.uni_mat4(_program.loc("uni_view"), view_matrix);
         _program.uni_mat4(_program.loc("uni_projection"), projection_matrix);
+        _program.uni_1f(_program.loc("uni_normal_factor"), normal_factor);
+        _program.uni_1i(_program.loc("uni_id"), id);
         _array.bind();
         glDrawElements(GL_TRIANGLES, _draw_count, GL_UNSIGNED_INT, 0);
         _array.unbind();
