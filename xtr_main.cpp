@@ -10,16 +10,13 @@
 #include <xtr_shader.h>
 #include <xtr_texture.h>
 
-constexpr int mini(const int x, const int y) { return x < y ? x : y; }
-constexpr int maxi(const int x, const int y) { return x > y ? x : y; }
-
 int main(int argc, char *argv[]) {
     xtr::App app{800, 600};
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     xtr::ScreenPass screen_pass{"./data/shaders/screen_xtoon.frag"};
-    xtr::MeshPass mesh_pass;
+    xtr::MeshPass mesh_pass(app.get_screen_width(), app.get_screen_height());
     xtr::TurnTableCamera camera{1.f, 11.f / 24.f * glm::pi<float>(), 0., {}};
     glm::mat4 model_matrix{1.};
     glm::mat4 projection_matrix =
@@ -41,51 +38,8 @@ int main(int argc, char *argv[]) {
         texture_files.push_back(file);
     }
 
-    xtr::Framebuffer framebuffer;
-
-    xtr::Texture position_texture{GL_TEXTURE_2D};
-    position_texture.bind();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, app.get_screen_width(),
-                 app.get_screen_height(), 0, GL_RGB, GL_FLOAT, nullptr);
-    position_texture.unbind();
-
-    xtr::Texture normal_texture{GL_TEXTURE_2D};
-    normal_texture.bind();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, app.get_screen_width(),
-                 app.get_screen_height(), 0, GL_RGB, GL_FLOAT, nullptr);
-    normal_texture.unbind();
-
-    xtr::Texture id_texture{GL_TEXTURE_2D};
-    id_texture.bind();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32I, app.get_screen_width(),
-                 app.get_screen_height(), 0, GL_RED, GL_INT, nullptr);
-    id_texture.unbind();
-
     xtr::Texture tonemap_texture{GL_TEXTURE_2D};
     tonemap_texture.load_file(texture_files[0]);
-
-    xtr::Renderbuffer renderbuffer;
-    renderbuffer.bind();
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT,
-                          app.get_screen_width(), app.get_screen_height());
-    renderbuffer.unbind();
-
-    framebuffer.bind();
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                           position_texture, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
-                           normal_texture, 0);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
-                           id_texture, 0);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                              GL_RENDERBUFFER, renderbuffer);
-    unsigned int attachments[] = {
-        GL_COLOR_ATTACHMENT0,
-        GL_COLOR_ATTACHMENT1,
-        GL_COLOR_ATTACHMENT2,
-    };
-    glDrawBuffers(3, attachments);
-    framebuffer.unbind();
 
     int selected_mesh = 0;
     bool mesh_y_up = true;
@@ -117,27 +71,7 @@ int main(int argc, char *argv[]) {
     app.enable_imgui = true;
     while (app.is_running()) {
         if (app.is_window_resized()) {
-            position_texture.bind();
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, app.get_screen_width(),
-                         app.get_screen_height(), 0, GL_RGB, GL_FLOAT, nullptr);
-            position_texture.unbind();
-
-            normal_texture.bind();
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, app.get_screen_width(),
-                         app.get_screen_height(), 0, GL_RGB, GL_FLOAT, nullptr);
-            normal_texture.unbind();
-
-            id_texture.bind();
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, app.get_screen_width(),
-                         app.get_screen_height(), 0, GL_RED, GL_FLOAT, nullptr);
-            id_texture.unbind();
-
-            renderbuffer.bind();
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT,
-                                  app.get_screen_width(),
-                                  app.get_screen_height());
-            renderbuffer.unbind();
-
+            mesh_pass.resize(app.get_screen_width(), app.get_screen_height());
             glViewport(0, 0, app.get_screen_width(), app.get_screen_height());
         }
 
@@ -242,71 +176,58 @@ int main(int argc, char *argv[]) {
             ImGui::End();
             ImGui::Render();
         }
-        framebuffer.bind();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         mesh_pass.draw(model_matrix, camera.view_matrix(), projection_matrix,
                        normal_factor, 69);
 
+        mesh_pass.bind_framebuffer();
         glReadBuffer(GL_COLOR_ATTACHMENT0);
         std::vector<glm::vec3> position_buffer(app.get_screen_width() *
                                                app.get_screen_height());
         glReadPixels(0, 0, app.get_screen_width(), app.get_screen_height(),
                      GL_RGB, GL_FLOAT, position_buffer.data());
 
-        framebuffer.unbind();
-
         if (c_pick.has_value()) {
             int x = c_pick.value().x * app.get_screen_width();
             int y = (1. - c_pick.value().y) * app.get_screen_height();
             dof_c = position_buffer[x + y * app.get_screen_width()];
         }
+        mesh_pass.unbind_framebuffer();
 
-        glActiveTexture(GL_TEXTURE0);
-        position_texture.bind();
-        glActiveTexture(GL_TEXTURE1);
-        normal_texture.bind();
-        glActiveTexture(GL_TEXTURE2);
-        id_texture.bind();
+        mesh_pass.bind_buffers(0, 1, 2);
         glActiveTexture(GL_TEXTURE3);
         tonemap_texture.bind();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        const xtr::Program &screen_pass_program = screen_pass.get_program();
-        screen_pass_program.use();
+        // screen pass program -> xtoon
+        const xtr::Program &spp = screen_pass.get_program();
+        spp.use();
 
-        screen_pass_program.uni_1i(screen_pass_program.loc("uni_position"), 0);
-        screen_pass_program.uni_1i(screen_pass_program.loc("uni_normal"), 1);
-        screen_pass_program.uni_1i(screen_pass_program.loc("uni_id_map"), 2);
-        screen_pass_program.uni_1i(screen_pass_program.loc("uni_tonemap"), 3);
+        spp.uni_1i(spp.loc("uni_position"), 0);
+        spp.uni_1i(spp.loc("uni_normal"), 1);
+        spp.uni_1i(spp.loc("uni_id_map"), 2);
+        spp.uni_1i(spp.loc("uni_tonemap"), 3);
 
-        screen_pass_program.uni_1i(screen_pass_program.loc("uni_id"), 69);
+        spp.uni_1i(spp.loc("uni_id"), 69);
 
-        screen_pass_program.uni_vec3(screen_pass_program.loc("uni_camera_pos"),
-                                     camera.get_position());
-        screen_pass_program.uni_vec3(screen_pass_program.loc("uni_camera_dir"),
-                                     camera.get_direction());
+        spp.uni_vec3(spp.loc("uni_camera_pos"), camera.get_position());
+        spp.uni_vec3(spp.loc("uni_camera_dir"), camera.get_direction());
 
-        screen_pass_program.uni_1i(
-            screen_pass_program.loc("uni_detail_mapping"), detail_mapping);
+        spp.uni_1i(spp.loc("uni_detail_mapping"), detail_mapping);
 
-        screen_pass_program.uni_1f(
-            screen_pass_program.loc("uni_near_silhouette_r"),
-            near_silhouette_r);
-        screen_pass_program.uni_1f(screen_pass_program.loc("uni_specular_s"),
-                                   specular_s);
+        spp.uni_1f(spp.loc("uni_near_silhouette_r"), near_silhouette_r);
+        spp.uni_1f(spp.loc("uni_specular_s"), specular_s);
 
-        screen_pass_program.uni_1f(screen_pass_program.loc("uni_dbam_z_min"),
-                                   dbam_z_min);
-        screen_pass_program.uni_1f(screen_pass_program.loc("uni_dbam_r"),
-                                   dbam_r);
-        screen_pass_program.uni_1f(screen_pass_program.loc("uni_dof_z_c"),
-                                   glm::length(dof_c - camera.get_position()));
+        spp.uni_1f(spp.loc("uni_dbam_z_min"), dbam_z_min);
+        spp.uni_1f(spp.loc("uni_dbam_r"), dbam_r);
+        spp.uni_1f(spp.loc("uni_dof_z_c"),
+                   glm::length(dof_c - camera.get_position()));
 
-        screen_pass_program.uni_vec3(screen_pass_program.loc("uni_light_dir"),
-                                     glm::vec3{
-                                         sinf(light_theta) * cosf(light_phi),
-                                         cosf(light_theta),
-                                         sinf(light_theta) * sinf(light_phi),
-                                     });
+        spp.uni_vec3(spp.loc("uni_light_dir"),
+                     glm::vec3{
+                         sinf(light_theta) * cosf(light_phi),
+                         cosf(light_theta),
+                         sinf(light_theta) * sinf(light_phi),
+                     });
 
         screen_pass.draw();
         app.end_frame();
