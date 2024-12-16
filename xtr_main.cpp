@@ -68,6 +68,8 @@ int main(int argc, char *argv[]) {
 
     float light_theta, light_phi;
 
+    float background_col[4];
+
     app.enable_imgui = true;
     while (app.is_running()) {
         if (app.is_window_resized()) {
@@ -173,9 +175,12 @@ int main(int argc, char *argv[]) {
             ImGui::Text("Light Direction");
             ImGui::DragFloat("theta", &light_theta, 1e-2f);
             ImGui::DragFloat("phi", &light_phi, 1e-2f);
+            ImGui::Separator();
+            ImGui::ColorPicker4("Background Colour", &background_col[0]);
             ImGui::End();
             ImGui::Render();
         }
+        glClearColor(background_col[0], background_col[1], background_col[2], background_col[3]);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         mesh_pass.draw(model_matrix, camera.view_matrix(), projection_matrix,
                        normal_factor, 69);
