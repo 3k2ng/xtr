@@ -71,9 +71,7 @@ int main(int argc, char *argv[]) {
 
     float light_theta, light_phi;
 
-    float background_col[4] = {
-        0.1f, 0.5f, 0.8f, 1.f
-    };
+    float background_col[4] = {0.1f, 0.5f, 0.8f, 1.f};
 
     float outline_col[3];
     float outline_thr = 0.4f;
@@ -109,95 +107,125 @@ int main(int argc, char *argv[]) {
         app.start_frame();
         if (app.enable_imgui) {
             ImGui::Begin("panel");
+            // camera settings
             camera.imgui();
+
             ImGui::Separator();
-            if (ImGui::CollapsingHeader("Background")) {
+            // background color selection
+            if (ImGui::TreeNode("Background")) {
                 ImGui::ColorPicker4("Background Colour", &background_col[0]);
+                ImGui::TreePop();
             }
+
             ImGui::Separator();
-            if (ImGui::CollapsingHeader("Outline")) {
+            // outline settings
+            if (ImGui::TreeNode("Outline")) {
                 ImGui::Combo("Outline Type", &outline_type, outline_types, 3);
-                ImGui::DragFloat("Outline Threshold", &outline_thr, 0.01f, 0.f, 1.f);
+                ImGui::DragFloat("Outline Threshold", &outline_thr, 0.01f, 0.f,
+                                 1.f);
                 ImGui::ColorPicker3("Outline Colour", &outline_col[0]);
+                ImGui::TreePop();
             }
+
             ImGui::Separator();
-            if (ImGui::BeginCombo(
-                    "Mesh", mesh_files[selected_mesh].filename().c_str())) {
-                for (int i = 0; i < mesh_files.size(); ++i) {
-                    const bool is_selected = selected_mesh == i;
-                    if (ImGui::Selectable(mesh_files[i].filename().c_str(),
-                                          is_selected)) {
-                        selected_mesh = i;
-                        mesh_pass.upload_mesh(
-                            xtr::load_mesh(mesh_files[i], abstracted_shape,
-                                           mesh_y_up, mesh_x_front));
+            // mesh settings
+            if (ImGui::TreeNode("Mesh")) {
+                if (ImGui::BeginCombo(
+                        "Mesh", mesh_files[selected_mesh].filename().c_str())) {
+                    for (int i = 0; i < mesh_files.size(); ++i) {
+                        const bool is_selected = selected_mesh == i;
+                        if (ImGui::Selectable(mesh_files[i].filename().c_str(),
+                                              is_selected)) {
+                            selected_mesh = i;
+                            mesh_pass.upload_mesh(
+                                xtr::load_mesh(mesh_files[i], abstracted_shape,
+                                               mesh_y_up, mesh_x_front));
+                        }
+                        if (is_selected) {
+                            ImGui::SetItemDefaultFocus();
+                        }
                     }
-                    if (is_selected) {
-                        ImGui::SetItemDefaultFocus();
-                    }
+                    ImGui::EndCombo();
                 }
-                ImGui::EndCombo();
-            }
-            if (ImGui::Checkbox("y_up", &mesh_y_up) ||
-                ImGui::Checkbox("x_front", &mesh_x_front)) {
-                mesh_pass.upload_mesh(xtr::load_mesh(mesh_files[selected_mesh],
-                                                     abstracted_shape,
-                                                     mesh_y_up, mesh_x_front));
-            }
-            ImGui::Separator();
-
-            if (ImGui::BeginCombo(
-                    "Texture",
-                    texture_files[selected_texture].filename().c_str())) {
-                for (int i = 0; i < texture_files.size(); ++i) {
-                    const bool is_selected = selected_texture == i;
-                    if (ImGui::Selectable(texture_files[i].filename().c_str(),
-                                          is_selected)) {
-                        selected_texture = i;
-                        tonemap_texture.load_file(texture_files[i]);
-                    }
-                    if (is_selected) {
-                        ImGui::SetItemDefaultFocus();
-                    }
+                if (ImGui::Checkbox("y_up", &mesh_y_up) ||
+                    ImGui::Checkbox("x_front", &mesh_x_front)) {
+                    mesh_pass.upload_mesh(xtr::load_mesh(
+                        mesh_files[selected_mesh], abstracted_shape, mesh_y_up,
+                        mesh_x_front));
                 }
-                ImGui::EndCombo();
+                ImGui::TreePop();
             }
 
             ImGui::Separator();
-
-            ImGui::Combo("Detail Mapping", &detail_mapping, detail_mappings, 4);
-            if (detail_mapping < 2) {
-                ImGui::DragFloat("z_min", &dbam_z_min, 0.1f, 0.1f, 10.f);
-                ImGui::DragFloat("r", &dbam_r, 1e-2f, 1. + 1e-3f, 100.f);
-            }
-            if (detail_mapping == 0) {        // LOA
-            } else if (detail_mapping == 1) { // Depth-of-field
-                ImGui::DragFloat3("c", &dof_c.x);
-            } else if (detail_mapping == 2) { // Near-silhouette
-                ImGui::DragFloat("Magnitude", &near_silhouette_r, 1e-2f, 1e-3f,
-                                 1e4f);
-            } else if (detail_mapping == 3) { // Specular highlights
-                ImGui::DragFloat("Shininess", &specular_s, 1e-2f, 1e-3f, 1e4f);
+            // texture settings
+            if (ImGui::TreeNode("Texture")) {
+                if (ImGui::BeginCombo(
+                        "Texture",
+                        texture_files[selected_texture].filename().c_str())) {
+                    for (int i = 0; i < texture_files.size(); ++i) {
+                        const bool is_selected = selected_texture == i;
+                        if (ImGui::Selectable(
+                                texture_files[i].filename().c_str(),
+                                is_selected)) {
+                            selected_texture = i;
+                            tonemap_texture.load_file(texture_files[i]);
+                        }
+                        if (is_selected) {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+                ImGui::TreePop();
             }
 
             ImGui::Separator();
-            ImGui::DragFloat("Normal Abstraction", &normal_factor, 1e-2f, 0.f,
-                             1.f);
-            if (ImGui::Combo("Abstracted Shape", &abstracted_shape,
-                             abstracted_shapes, 4)) {
-                mesh_pass.upload_mesh(xtr::load_mesh(mesh_files[selected_mesh],
-                                                     abstracted_shape,
-                                                     mesh_y_up, mesh_x_front));
+            // x-toon settings
+            if (ImGui::TreeNode("X-Toon")) {
+                ImGui::Combo("Detail Mapping", &detail_mapping, detail_mappings,
+                             4);
+                if (detail_mapping < 2) {
+                    ImGui::DragFloat("z_min", &dbam_z_min, 0.1f, 0.1f, 10.f);
+                    ImGui::DragFloat("r", &dbam_r, 1e-2f, 1. + 1e-3f, 100.f);
+                }
+                if (detail_mapping == 0) {        // LOA
+                } else if (detail_mapping == 1) { // Depth-of-field
+                    ImGui::DragFloat3("c", &dof_c.x);
+                } else if (detail_mapping == 2) { // Near-silhouette
+                    ImGui::DragFloat("Magnitude", &near_silhouette_r, 1e-2f,
+                                     1e-3f, 1e4f);
+                } else if (detail_mapping == 3) { // Specular highlights
+                    ImGui::DragFloat("Shininess", &specular_s, 1e-2f, 1e-3f,
+                                     1e4f);
+                }
+                ImGui::TreePop();
             }
+
             ImGui::Separator();
-            ImGui::Text("Light Direction");
-            ImGui::DragFloat("theta", &light_theta, 1e-2f);
-            ImGui::DragFloat("phi", &light_phi, 1e-2f);
+            // normal abstraction settings
+            if (ImGui::TreeNode("Normal Abstraction")) {
+                ImGui::DragFloat("Normal Factor", &normal_factor, 1e-2f, 0.f,
+                                 1.f);
+                if (ImGui::Combo("Abstracted Shape", &abstracted_shape,
+                                 abstracted_shapes, 4)) {
+                    mesh_pass.upload_mesh(xtr::load_mesh(
+                        mesh_files[selected_mesh], abstracted_shape, mesh_y_up,
+                        mesh_x_front));
+                }
+                ImGui::TreePop();
+            }
+
+            ImGui::Separator();
+            // light settings
+            if (ImGui::TreeNode("Light")) {
+                ImGui::DragFloat("theta", &light_theta, 1e-2f);
+                ImGui::DragFloat("phi", &light_phi, 1e-2f);
+                ImGui::TreePop();
+            }
             ImGui::End();
             ImGui::Render();
         }
-        glClearColor(background_col[0], background_col[1], background_col[2], background_col[3]);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        mesh_pass.clear_buffer();
         mesh_pass.draw(model_matrix, camera.view_matrix(), projection_matrix,
                        normal_factor, 69);
 
@@ -218,12 +246,15 @@ int main(int argc, char *argv[]) {
         mesh_pass.bind_buffers(0, 1, 2);
         glActiveTexture(GL_TEXTURE3);
         tonemap_texture.bind();
+        glClearColor(background_col[0], background_col[1], background_col[2],
+                     background_col[3]);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         // screen pass program -> xtoon
         const xtr::Program &spp = screen_pass.get_program();
         spp.use();
 
-        spp.uni_2f(spp.loc("uni_screen_w_h"), float(app.get_screen_width()), float(app.get_screen_height()));
+        spp.uni_2f(spp.loc("uni_screen_size"), float(app.get_screen_width()),
+                   float(app.get_screen_height()));
 
         spp.uni_1i(spp.loc("uni_position"), 0);
         spp.uni_1i(spp.loc("uni_normal"), 1);
@@ -246,12 +277,11 @@ int main(int argc, char *argv[]) {
                    glm::length(dof_c - camera.get_position()));
 
         spp.uni_1i(spp.loc("uni_outline_type"), outline_type);
-        spp.uni_vec3(spp.loc("uni_outline_col"), 
-                    glm::vec3{
-                        outline_col[0],
-                        outline_col[1],
-                        outline_col[2],
-                    });
+        spp.uni_vec3(spp.loc("uni_outline_col"), glm::vec3{
+                                                     outline_col[0],
+                                                     outline_col[1],
+                                                     outline_col[2],
+                                                 });
         spp.uni_1f(spp.loc("uni_outline_thr"), outline_thr);
 
         spp.uni_vec3(spp.loc("uni_light_dir"),

@@ -67,6 +67,13 @@ class MeshPass {
         _array.unbind();
     }
 
+    inline void clear_buffer() const {
+        _framebuffer.bind();
+        glClearColor(0, 0, 0, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        _framebuffer.unbind();
+    }
+
     inline void draw(const glm::mat4 &model_matrix,
                      const glm::mat4 &view_matrix,
                      const glm::mat4 &projection_matrix,
@@ -79,7 +86,6 @@ class MeshPass {
         _program.uni_1f(_program.loc("uni_normal_factor"), normal_factor);
         _program.uni_1i(_program.loc("uni_id"), id);
         _array.bind();
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDrawElements(GL_TRIANGLES, _draw_count, GL_UNSIGNED_INT, 0);
         _array.unbind();
         _framebuffer.unbind();

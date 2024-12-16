@@ -3,7 +3,7 @@ layout(location = 0) out vec4 frag_color;
 
 in vec2 uv;
 
-uniform vec2 uni_screen_w_h;
+uniform vec2 uni_screen_size;
 
 uniform sampler2D uni_position;
 uniform sampler2D uni_normal;
@@ -33,7 +33,7 @@ uniform vec3 uni_light_dir;
 void main()
 {
     int id = int(texture(uni_id_map, uv).x);
-    if (uni_id != id) discard;
+    if (uni_id != id && uni_outline_type != 2) discard;
 
     vec3 position = texture(uni_position, uv).xyz;
     vec3 normal = texture(uni_normal, uv).xyz;
@@ -92,13 +92,26 @@ void main()
             for (int j = 0; j < 2; j++) {
                 int x_offset = (i * 2) - 1;
                 int y_offset = (j * 2) - 1;
-                samples[j + i*2] = texture(
-                    uni_position,
-                    vec2(
-                        uv.x - (x_offset/uni_screen_w_h.x),
-                        uv.y - (y_offset/uni_screen_w_h.y)
-                    )
-                ).xyz;
+                int sampled_id = int(texture(
+                            uni_id_map,
+                            vec2(
+                                uv.x - (x_offset / uni_screen_size.x),
+                                uv.y - (y_offset / uni_screen_size.y)
+                            )
+                        ).x);
+                // samples[j + i * 2] = texture(
+                //         uni_position,
+                //         vec2(
+                //             uv.x - (x_offset / uni_screen_size.x),
+                //             uv.y - (y_offset / uni_screen_size.y)
+                //         )
+                //     ).xyz;
+                if (sampled_id != uni_id) {
+                    samples[j + i * 2] = vec3(1000.);
+                }
+                else {
+                    samples[j + i * 2] = vec3(0.);
+                }
             }
         }
 
@@ -114,5 +127,6 @@ void main()
         float edge = sqrt(dot(horizontal, horizontal) + dot(vertical, vertical));
 
         if (edge > 1.f - uni_outline_thr) frag_color = vec4(uni_outline_col, 1.f);
+        else if (uni_id != id) discard;
     }
 }
