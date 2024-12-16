@@ -15,7 +15,8 @@ int main(int argc, char *argv[]) {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-    xtr::ScreenPass screen_pass{"./data/shaders/screen_xtoon.frag"};
+    xtr::ScreenPass xtoon_pass{"./data/shaders/screen_xtoon.frag"};
+    xtr::ScreenPass outline_pass{"./data/shaders/screen_outline.frag"};
     xtr::MeshPass mesh_pass(app.get_screen_width(), app.get_screen_height());
     xtr::TurnTableCamera camera{1.f, 11.f / 24.f * glm::pi<float>(), 0., {}};
     glm::mat4 model_matrix{1.};
@@ -250,49 +251,79 @@ int main(int argc, char *argv[]) {
         glClearColor(background_col[0], background_col[1], background_col[2],
                      background_col[3]);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // screen pass program -> xtoon
-        const xtr::Program &spp = screen_pass.get_program();
-        spp.use();
+        const xtr::Program &xtoon_program = xtoon_pass.get_program();
+        xtoon_program.use();
 
-        spp.uni_2f(spp.loc("uni_screen_size"), float(app.get_screen_width()),
-                   float(app.get_screen_height()));
+        xtoon_program.uni_2f(xtoon_program.loc("uni_screen_size"),
+                             float(app.get_screen_width()),
+                             float(app.get_screen_height()));
 
-        spp.uni_1i(spp.loc("uni_position"), 0);
-        spp.uni_1i(spp.loc("uni_normal"), 1);
-        spp.uni_1i(spp.loc("uni_id_map"), 2);
-        spp.uni_1i(spp.loc("uni_tonemap"), 3);
+        xtoon_program.uni_1i(xtoon_program.loc("uni_position"), 0);
+        xtoon_program.uni_1i(xtoon_program.loc("uni_normal"), 1);
+        xtoon_program.uni_1i(xtoon_program.loc("uni_id_map"), 2);
+        xtoon_program.uni_1i(xtoon_program.loc("uni_tonemap"), 3);
 
-        spp.uni_1i(spp.loc("uni_id"), 69);
+        xtoon_program.uni_1i(xtoon_program.loc("uni_id"), 69);
 
-        spp.uni_vec3(spp.loc("uni_camera_pos"), camera.get_position());
-        spp.uni_vec3(spp.loc("uni_camera_dir"), camera.get_direction());
+        xtoon_program.uni_vec3(xtoon_program.loc("uni_camera_pos"),
+                               camera.get_position());
+        xtoon_program.uni_vec3(xtoon_program.loc("uni_camera_dir"),
+                               camera.get_direction());
 
-        spp.uni_1i(spp.loc("uni_detail_mapping"), detail_mapping);
+        xtoon_program.uni_1i(xtoon_program.loc("uni_detail_mapping"),
+                             detail_mapping);
 
-        spp.uni_1f(spp.loc("uni_near_silhouette_r"), near_silhouette_r);
-        spp.uni_1f(spp.loc("uni_specular_s"), specular_s);
+        xtoon_program.uni_1f(xtoon_program.loc("uni_near_silhouette_r"),
+                             near_silhouette_r);
+        xtoon_program.uni_1f(xtoon_program.loc("uni_specular_s"), specular_s);
 
-        spp.uni_1f(spp.loc("uni_dbam_z_min"), dbam_z_min);
-        spp.uni_1f(spp.loc("uni_dbam_r"), dbam_r);
-        spp.uni_1f(spp.loc("uni_dof_z_c"),
-                   glm::length(dof_c - camera.get_position()));
+        xtoon_program.uni_1f(xtoon_program.loc("uni_dbam_z_min"), dbam_z_min);
+        xtoon_program.uni_1f(xtoon_program.loc("uni_dbam_r"), dbam_r);
+        xtoon_program.uni_1f(xtoon_program.loc("uni_dof_z_c"),
+                             glm::length(dof_c - camera.get_position()));
 
-        spp.uni_1i(spp.loc("uni_outline_type"), outline_type);
-        spp.uni_vec3(spp.loc("uni_outline_col"), glm::vec3{
-                                                     outline_col[0],
-                                                     outline_col[1],
-                                                     outline_col[2],
-                                                 });
-        spp.uni_1f(spp.loc("uni_outline_thr"), outline_thr);
+        xtoon_program.uni_vec3(xtoon_program.loc("uni_light_dir"),
+                               glm::vec3{
+                                   sinf(light_theta) * cosf(light_phi),
+                                   cosf(light_theta),
+                                   sinf(light_theta) * sinf(light_phi),
+                               });
 
-        spp.uni_vec3(spp.loc("uni_light_dir"),
-                     glm::vec3{
-                         sinf(light_theta) * cosf(light_phi),
-                         cosf(light_theta),
-                         sinf(light_theta) * sinf(light_phi),
-                     });
+        xtoon_pass.draw();
 
-        screen_pass.draw();
+        glClear(GL_DEPTH_BUFFER_BIT);
+        const xtr::Program &outline_program = outline_pass.get_program();
+        outline_program.use();
+
+        outline_program.uni_2f(outline_program.loc("uni_screen_size"),
+                               float(app.get_screen_width()),
+                               float(app.get_screen_height()));
+
+        outline_program.uni_1i(outline_program.loc("uni_position"), 0);
+        outline_program.uni_1i(outline_program.loc("uni_normal"), 1);
+        outline_program.uni_1i(outline_program.loc("uni_id_map"), 2);
+        outline_program.uni_1i(outline_program.loc("uni_tonemap"), 3);
+
+        outline_program.uni_1i(outline_program.loc("uni_id"), 69);
+
+        outline_program.uni_vec3(outline_program.loc("uni_camera_pos"),
+                                 camera.get_position());
+        outline_program.uni_vec3(outline_program.loc("uni_camera_dir"),
+                                 camera.get_direction());
+
+        outline_program.uni_1i(outline_program.loc("uni_outline_type"),
+                               outline_type);
+        outline_program.uni_vec3(outline_program.loc("uni_outline_col"),
+                                 glm::vec3{
+                                     outline_col[0],
+                                     outline_col[1],
+                                     outline_col[2],
+                                 });
+        outline_program.uni_1f(outline_program.loc("uni_outline_thr"),
+                               outline_thr);
+
+        outline_pass.draw();
+
         app.end_frame();
     }
     return 0;
