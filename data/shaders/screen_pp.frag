@@ -30,6 +30,13 @@ vec2 vec2div(vec2 v0, vec2 v1) {
     return vec2(v0.x / v1.x, v0.y / v1.y);
 }
 
+float soft_threshold(float value, float threshold) {
+    float v = threshold - value;
+    if (v < -1.) return 0.;
+    if (v > 0.) return 1.;
+    return v + 1.;
+}
+
 void main() {
     int id = int(texture(uni_id_map, uv).x);
     if (uni_id != id) discard;
@@ -57,10 +64,10 @@ void main() {
         vec2 uv_k = rotate(round(rotate(frag_coord, ROTATION_K) / DOT_SIZE) * DOT_SIZE, -ROTATION_K);
 
         // distance to nearest dot
-        float d_c = distance(frag_coord, uv_c) * sqrt(2.) / DOT_SIZE;
-        float d_m = distance(frag_coord, uv_m) * sqrt(2.) / DOT_SIZE;
-        float d_y = distance(frag_coord, uv_y) * sqrt(2.) / DOT_SIZE;
-        float d_k = distance(frag_coord, uv_k) * sqrt(2.) / DOT_SIZE;
+        float d_c = distance(frag_coord, uv_c);
+        float d_m = distance(frag_coord, uv_m);
+        float d_y = distance(frag_coord, uv_y);
+        float d_k = distance(frag_coord, uv_k);
 
         // cmyk at dot
         float v_c = rgb2cmyk(texture(uni_frame, uv_c / uni_screen_size).rgb).x;
@@ -69,10 +76,10 @@ void main() {
         float v_k = rgb2cmyk(texture(uni_frame, uv_k / uni_screen_size).rgb).w;
 
         // final mask
-        vec3 col_c = vec3(1.) - vec3(1., 0., 0.) * float(d_c < v_c);
-        vec3 col_m = vec3(1.) - vec3(0., 1., 0.) * float(d_m < v_m);
-        vec3 col_y = vec3(1.) - vec3(0., 0., 1.) * float(d_y < v_y);
-        vec3 col_k = vec3(1.) - vec3(1.) * float(d_k < v_k);
+        vec3 col_c = vec3(1.) - vec3(1., 0., 0.) * soft_threshold(d_c, v_c / sqrt(2.) * DOT_SIZE);
+        vec3 col_m = vec3(1.) - vec3(0., 1., 0.) * soft_threshold(d_m, v_m / sqrt(2.) * DOT_SIZE);
+        vec3 col_y = vec3(1.) - vec3(0., 0., 1.) * soft_threshold(d_y, v_y / sqrt(2.) * DOT_SIZE);
+        vec3 col_k = vec3(1.) - vec3(1.) * soft_threshold(d_k, v_k / sqrt(2.) * DOT_SIZE);
 
         // combined result
         frag_color = vec4(vec3(col_c * col_m * col_y * col_k), 1.);
