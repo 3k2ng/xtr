@@ -3,6 +3,8 @@ layout(location = 0) out vec4 frag_color;
 
 in vec2 uv;
 
+uniform vec2 uni_screen_w_h;
+
 uniform sampler2D uni_position;
 uniform sampler2D uni_normal;
 uniform sampler2D uni_id_map;
@@ -22,6 +24,7 @@ uniform float uni_dbam_z_min;
 uniform float uni_dbam_r;
 uniform float uni_dof_z_c;
 
+uniform int uni_outline_type;
 uniform vec3 uni_outline_col;
 uniform float uni_outline_thr;
 
@@ -77,7 +80,39 @@ void main()
     }
     else discard;
 
-    // naive outline (normal dot view)
-    float outline = abs(dot(normal, uni_camera_dir));
-    if (outline < uni_outline_thr) frag_color = vec4(uni_outline_col, 1.f);
+    // naive outline method (normal dot view)
+    if (uni_outline_type == 1) {
+        float outline = abs(dot(normal, uni_camera_dir));
+        if (outline < uni_outline_thr) frag_color = vec4(uni_outline_col, 1.f);
+    }
+    // edge detection method (roberts cross)
+    else if (uni_outline_type == 2) {
+        vec3 samples[4];
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+                int x_offset = (i * 2) - 1;
+                int y_offset = (j * 2) - 1;
+                samples[j + i*2] = texture(
+                    uni_position,
+                    vec2(
+                        uv.x - (x_offset/uni_screen_w_h.x),
+                        uv.y - (y_offset/uni_screen_w_h.y)
+                    )
+                ).xyz;
+            }
+        }
+
+        vec3 horizontal = vec3(0.f);
+        vec3 vertical = vec3(0.f);
+
+        horizontal += samples[0] * 1.f; // top left (factor +1)
+        horizontal += samples[3] * -1.f; // bottom right (factor -1)
+
+        vertical += samples[2] * -1.f; // bottom left (factor -1)
+        vertical += samples[1] * 1.f; // top right (factor +1)
+
+        float edge = sqrt(dot(horizontal, horizontal) + dot(vertical, vertical));
+
+        if (edge > 1.f - uni_outline_thr) frag_color = vec4(uni_outline_col, 1.f);
+    }
 }

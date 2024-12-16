@@ -50,6 +50,9 @@ int main(int argc, char *argv[]) {
                                      "Specular highlights"};
     int detail_mapping = 0;
 
+    const char *outline_types[] = {"Off", "Near-silhouette", "Roberts Cross"};
+    int outline_type = 0;
+
     // Depth-based attribute mapping
     float dbam_z_min = 0.5f;
     float dbam_r = 5.f;
@@ -113,6 +116,7 @@ int main(int argc, char *argv[]) {
             }
             ImGui::Separator();
             if (ImGui::CollapsingHeader("Outline")) {
+                ImGui::Combo("Outline Type", &outline_type, outline_types, 3);
                 ImGui::DragFloat("Outline Threshold", &outline_thr, 0.01f, 0.f, 1.f);
                 ImGui::ColorPicker3("Outline Colour", &outline_col[0]);
             }
@@ -219,6 +223,8 @@ int main(int argc, char *argv[]) {
         const xtr::Program &spp = screen_pass.get_program();
         spp.use();
 
+        spp.uni_2f(spp.loc("uni_screen_w_h"), float(app.get_screen_width()), float(app.get_screen_height()));
+
         spp.uni_1i(spp.loc("uni_position"), 0);
         spp.uni_1i(spp.loc("uni_normal"), 1);
         spp.uni_1i(spp.loc("uni_id_map"), 2);
@@ -239,6 +245,7 @@ int main(int argc, char *argv[]) {
         spp.uni_1f(spp.loc("uni_dof_z_c"),
                    glm::length(dof_c - camera.get_position()));
 
+        spp.uni_1i(spp.loc("uni_outline_type"), outline_type);
         spp.uni_vec3(spp.loc("uni_outline_col"), 
                     glm::vec3{
                         outline_col[0],
