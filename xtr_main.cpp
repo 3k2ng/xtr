@@ -68,7 +68,12 @@ int main(int argc, char *argv[]) {
 
     float light_theta, light_phi;
 
-    float background_col[4];
+    float background_col[4] = {
+        0.1f, 0.5f, 0.8f, 1.f
+    };
+
+    float outline_col[3];
+    float outline_thr = 0.4f;
 
     app.enable_imgui = true;
     while (app.is_running()) {
@@ -102,6 +107,15 @@ int main(int argc, char *argv[]) {
         if (app.enable_imgui) {
             ImGui::Begin("panel");
             camera.imgui();
+            ImGui::Separator();
+            if (ImGui::CollapsingHeader("Background")) {
+                ImGui::ColorPicker4("Background Colour", &background_col[0]);
+            }
+            ImGui::Separator();
+            if (ImGui::CollapsingHeader("Outline")) {
+                ImGui::DragFloat("Outline Threshold", &outline_thr, 0.01f, 0.f, 1.f);
+                ImGui::ColorPicker3("Outline Colour", &outline_col[0]);
+            }
             ImGui::Separator();
             if (ImGui::BeginCombo(
                     "Mesh", mesh_files[selected_mesh].filename().c_str())) {
@@ -175,8 +189,6 @@ int main(int argc, char *argv[]) {
             ImGui::Text("Light Direction");
             ImGui::DragFloat("theta", &light_theta, 1e-2f);
             ImGui::DragFloat("phi", &light_phi, 1e-2f);
-            ImGui::Separator();
-            ImGui::ColorPicker4("Background Colour", &background_col[0]);
             ImGui::End();
             ImGui::Render();
         }
@@ -226,6 +238,14 @@ int main(int argc, char *argv[]) {
         spp.uni_1f(spp.loc("uni_dbam_r"), dbam_r);
         spp.uni_1f(spp.loc("uni_dof_z_c"),
                    glm::length(dof_c - camera.get_position()));
+
+        spp.uni_vec3(spp.loc("uni_outline_col"), 
+                    glm::vec3{
+                        outline_col[0],
+                        outline_col[1],
+                        outline_col[2],
+                    });
+        spp.uni_1f(spp.loc("uni_outline_thr"), outline_thr);
 
         spp.uni_vec3(spp.loc("uni_light_dir"),
                      glm::vec3{

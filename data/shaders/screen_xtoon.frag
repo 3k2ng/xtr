@@ -22,6 +22,9 @@ uniform float uni_dbam_z_min;
 uniform float uni_dbam_r;
 uniform float uni_dof_z_c;
 
+uniform vec3 uni_outline_col;
+uniform float uni_outline_thr;
+
 uniform vec3 uni_light_dir;
 
 void main()
@@ -73,4 +76,8 @@ void main()
         frag_color = texture(uni_tonemap, vec2(nl, 1. - obam));
     }
     else discard;
+
+
+    float outline = pow(abs(dot(normal, uni_camera_dir)), 1.f);
+    if (outline < uni_outline_thr) frag_color = vec4(uni_outline_col, 1.f);
 }
