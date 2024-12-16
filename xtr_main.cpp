@@ -50,7 +50,8 @@ int main(int argc, char *argv[]) {
                                      "Specular highlights"};
     int detail_mapping = 0;
 
-    const char *outline_types[] = {"Off", "Near-silhouette", "Roberts Cross"};
+    const char *outline_types[] = {"Off", "Near-silhouette", "Roberts Cross",
+                                   "Sobel"};
     int outline_type = 0;
 
     // Depth-based attribute mapping
@@ -120,7 +121,7 @@ int main(int argc, char *argv[]) {
             ImGui::Separator();
             // outline settings
             if (ImGui::TreeNode("Outline")) {
-                ImGui::Combo("Outline Type", &outline_type, outline_types, 3);
+                ImGui::Combo("Outline Type", &outline_type, outline_types, 4);
                 ImGui::DragFloat("Outline Threshold", &outline_thr, 0.01f, 0.f,
                                  1.f);
                 ImGui::ColorPicker3("Outline Colour", &outline_col[0]);
