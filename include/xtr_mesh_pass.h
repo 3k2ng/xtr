@@ -96,12 +96,18 @@ class MeshPass {
 
     inline void bind_buffers(const int uni_position, const int uni_normal,
                              const int uni_id) {
-        glActiveTexture(GL_TEXTURE0 + uni_position);
-        _position_texture.bind();
-        glActiveTexture(GL_TEXTURE0 + uni_normal);
-        _normal_texture.bind();
-        glActiveTexture(GL_TEXTURE0 + uni_id);
-        _id_texture.bind();
+        if (uni_position >= 0) {
+            glActiveTexture(GL_TEXTURE0 + uni_position);
+            _position_texture.bind();
+        }
+        if (uni_normal >= 0) {
+            glActiveTexture(GL_TEXTURE0 + uni_normal);
+            _normal_texture.bind();
+        }
+        if (uni_id >= 0) {
+            glActiveTexture(GL_TEXTURE0 + uni_id);
+            _id_texture.bind();
+        }
     };
 
     inline const xtr::Program &get_program() const { return _program; }

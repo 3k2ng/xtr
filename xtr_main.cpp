@@ -17,6 +17,7 @@ int main(int argc, char *argv[]) {
     glCullFace(GL_BACK);
     xtr::ScreenPass xtoon_pass{"./data/shaders/screen_xtoon.frag"};
     xtr::ScreenPass outline_pass{"./data/shaders/screen_outline.frag"};
+    xtr::ScreenPass pp_pass{"./data/shaders/screen_pp.frag"};
     xtr::MeshPass mesh_pass(app.get_screen_width(), app.get_screen_height());
     xtr::TurnTableCamera camera{1.f, 11.f / 24.f * glm::pi<float>(), 0., {}};
     glm::mat4 model_matrix{1.};
@@ -41,6 +42,24 @@ int main(int argc, char *argv[]) {
 
     xtr::Texture tonemap_texture{GL_TEXTURE_2D};
     tonemap_texture.load_file(texture_files[0]);
+
+    xtr::Texture frame_texture{GL_TEXTURE_2D};
+    frame_texture.bind();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, app.get_screen_width(),
+                 app.get_screen_height(), 0, GL_RGBA, GL_FLOAT, nullptr);
+    frame_texture.unbind();
+    xtr::Renderbuffer frame_rb;
+    frame_rb.bind();
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT,
+                          app.get_screen_width(), app.get_screen_height());
+    frame_rb.unbind();
+    xtr::Framebuffer frame_fb;
+    frame_fb.bind();
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           frame_texture, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                              GL_RENDERBUFFER, frame_rb);
+    frame_fb.unbind();
 
     int selected_mesh = 0;
     bool mesh_y_up = true;
@@ -78,10 +97,23 @@ int main(int argc, char *argv[]) {
     float outline_col[3];
     float outline_thr = 0.4f;
 
+    const char *pp_effects[] = {"None", "Halftone"};
+    int pp_effect = 0;
+
     app.enable_imgui = true;
     while (app.is_running()) {
         if (app.is_window_resized()) {
             mesh_pass.resize(app.get_screen_width(), app.get_screen_height());
+            frame_texture.bind();
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, app.get_screen_width(),
+                         app.get_screen_height(), 0, GL_RGBA, GL_FLOAT,
+                         nullptr);
+            frame_texture.unbind();
+            frame_rb.bind();
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT,
+                                  app.get_screen_width(),
+                                  app.get_screen_height());
+            frame_rb.unbind();
             glViewport(0, 0, app.get_screen_width(), app.get_screen_height());
         }
 
@@ -224,6 +256,14 @@ int main(int argc, char *argv[]) {
                 ImGui::DragFloat("phi", &light_phi, 1e-2f);
                 ImGui::TreePop();
             }
+
+            ImGui::Separator();
+            // post-processing settings
+            if (ImGui::TreeNode("Post-processing")) {
+                ImGui::Combo("Post-processing effect", &pp_effect, pp_effects,
+                             2);
+                ImGui::TreePop();
+            }
             ImGui::End();
             ImGui::Render();
         }
@@ -245,11 +285,10 @@ int main(int argc, char *argv[]) {
         }
         mesh_pass.unbind_framebuffer();
 
+        frame_fb.bind();
         mesh_pass.bind_buffers(0, 1, 2);
         glActiveTexture(GL_TEXTURE3);
         tonemap_texture.bind();
-        glClearColor(background_col[0], background_col[1], background_col[2],
-                     background_col[3]);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         const xtr::Program &xtoon_program = xtoon_pass.get_program();
         xtoon_program.use();
@@ -290,7 +329,32 @@ int main(int argc, char *argv[]) {
                                });
 
         xtoon_pass.draw();
+        frame_fb.unbind();
 
+        glActiveTexture(GL_TEXTURE0);
+        frame_texture.bind();
+
+        mesh_pass.bind_buffers(-1, -1, 1);
+        glClearColor(background_col[0], background_col[1], background_col[2],
+                     background_col[3]);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        const xtr::Program &pp_program = pp_pass.get_program();
+        pp_program.use();
+
+        pp_program.uni_2f(pp_program.loc("uni_screen_size"),
+                          float(app.get_screen_width()),
+                          float(app.get_screen_height()));
+
+        pp_program.uni_1i(pp_program.loc("uni_frame"), 0);
+        pp_program.uni_1i(pp_program.loc("uni_id_map"), 1);
+
+        pp_program.uni_1i(pp_program.loc("uni_id"), 69);
+
+        pp_program.uni_1i(pp_program.loc("uni_pp_effect"), pp_effect);
+
+        pp_pass.draw();
+
+        mesh_pass.bind_buffers(0, 1, 2);
         glClear(GL_DEPTH_BUFFER_BIT);
         const xtr::Program &outline_program = outline_pass.get_program();
         outline_program.use();
