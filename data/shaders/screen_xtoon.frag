@@ -77,7 +77,7 @@ void main()
     }
     else discard;
 
-
+    // naive outline (normal dot view)
     float outline = abs(dot(normal, uni_camera_dir));
     if (outline < uni_outline_thr) frag_color = vec4(uni_outline_col, 1.f);
 }
