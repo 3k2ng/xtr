@@ -18,6 +18,38 @@ uniform vec3 uni_camera_dir;
 uniform int uni_outline_type;
 uniform vec3 uni_outline_col;
 uniform float uni_outline_thr;
+uniform int uni_outline_id_fac;
+uniform float uni_outline_normal_fac;
+uniform float uni_outline_position_fac;
+
+void calculate_sample(int x_offset, int y_offset, out vec3 sample)
+{
+    // Account for ID
+    int sampled_id = int(texture(
+                uni_id_map,
+                vec2(
+                    uv.x - (x_offset / uni_screen_size.x),
+                    uv.y - (y_offset / uni_screen_size.y)
+                )
+            ).x);
+    sample = vec3(float(sampled_id)) * uni_outline_id_fac;
+    // Account for position
+    sample += texture(
+            uni_position,
+            vec2(
+                uv.x - (x_offset / uni_screen_size.x),
+                uv.y - (y_offset / uni_screen_size.y)
+            )
+        ).xyz * uni_outline_position_fac;
+    // Account for normal
+    sample += texture(
+            uni_normal,
+            vec2(
+                uv.x - (x_offset / uni_screen_size.x),
+                uv.y - (y_offset / uni_screen_size.y)
+            )
+        ).xyz * uni_outline_normal_fac;
+}
 
 void main()
 {
@@ -45,28 +77,7 @@ void main()
                 int x_offset = (i * 2) - 1;
                 int y_offset = (j * 2) - 1;
                 int array_index = j + i * 2;
-                int sampled_id = int(texture(
-                            uni_id_map,
-                            vec2(
-                                uv.x - (x_offset / uni_screen_size.x),
-                                uv.y - (y_offset / uni_screen_size.y)
-                            )
-                        ).x);
-                samples[array_index] = texture(
-                        uni_position,
-                        vec2(
-                            uv.x - (x_offset / uni_screen_size.x),
-                            uv.y - (y_offset / uni_screen_size.y)
-                        )
-                    ).xyz;
-                samples[array_index] += vec3(float(sampled_id));
-                samples[array_index] += texture(
-                        uni_normal,
-                        vec2(
-                            uv.x - (x_offset / uni_screen_size.x),
-                            uv.y - (y_offset / uni_screen_size.y)
-                        )
-                    ).xyz;
+                calculate_sample(x_offset, y_offset, samples[array_index]);
             }
         }
 
@@ -78,7 +89,7 @@ void main()
 
         float edge = sqrt(dot(horizontal, horizontal) + dot(vertical, vertical));
 
-        if (edge > 1.f - uni_outline_thr) frag_color = vec4(uni_outline_col, 1.f);
+        if (edge > 1.f - uni_outline_thr) frag_color = vec4(uni_outline_col, clamp(edge, 0.f, 1.f));
         else discard;
     }
     // edge detection method (sobel operator)
@@ -90,28 +101,7 @@ void main()
                 int x_offset = i - 1;
                 int y_offset = j - 1;
                 int array_index = j + i * 3;
-                int sampled_id = int(texture(
-                            uni_id_map,
-                            vec2(
-                                uv.x - (x_offset / uni_screen_size.x),
-                                uv.y - (y_offset / uni_screen_size.y)
-                            )
-                        ).x);
-                samples[array_index] = texture(
-                        uni_position,
-                        vec2(
-                            uv.x - (x_offset / uni_screen_size.x),
-                            uv.y - (y_offset / uni_screen_size.y)
-                        )
-                    ).xyz;
-                samples[array_index] += vec3(float(sampled_id));
-                samples[array_index] += texture(
-                        uni_normal,
-                        vec2(
-                            uv.x - (x_offset / uni_screen_size.x),
-                            uv.y - (y_offset / uni_screen_size.y)
-                        )
-                    ).xyz;
+                calculate_sample(x_offset, y_offset, samples[array_index]);
             }
         }
 
@@ -131,7 +121,7 @@ void main()
 
         float edge = sqrt(dot(horizontal, horizontal) + dot(vertical, vertical));
 
-        if (edge > 1.f - uni_outline_thr) frag_color = vec4(uni_outline_col, 1.f);
+        if (edge > 1.f - uni_outline_thr) frag_color = vec4(uni_outline_col, clamp(edge, 0.f, 1.f));
         else discard;
     }
     else discard;

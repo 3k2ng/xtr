@@ -96,9 +96,9 @@ int main(int argc, char *argv[]) {
 
     float outline_col[3];
     float outline_thr = 0.4f;
-    bool outline_id_weight = true;
-    float outline_normal_weight = 0.5f;
-    float outline_position_weight = 1.f;
+    bool outline_id_fac = true;
+    float outline_normal_fac = 1.f;
+    float outline_position_fac = 1.f;
 
     const char *pp_effects[] = {"None", "Halftone"};
     int pp_effect = 0;
@@ -160,6 +160,9 @@ int main(int argc, char *argv[]) {
                 ImGui::Combo("Outline Type", &outline_type, outline_types, 4);
                 ImGui::DragFloat("Outline Threshold", &outline_thr, 0.01f, 0.f,
                                  1.f);
+                ImGui::Checkbox("Outline ID Factor", &outline_id_fac);
+                ImGui::DragFloat("Outline Normal Factor", &outline_normal_fac, 0.01f, 0.f, 1.f);
+                ImGui::DragFloat("Outline Position Factor", &outline_position_fac, 0.01f, 0.f, 1.f);
                 ImGui::ColorPicker3("Outline Colour", &outline_col[0]);
                 ImGui::TreePop();
             }
@@ -388,6 +391,12 @@ int main(int argc, char *argv[]) {
                                  });
         outline_program.uni_1f(outline_program.loc("uni_outline_thr"),
                                outline_thr);
+        outline_program.uni_1i(outline_program.loc("uni_outline_id_fac"),
+                               outline_id_fac);
+        outline_program.uni_1f(outline_program.loc("uni_outline_normal_fac"),
+                               outline_normal_fac);
+        outline_program.uni_1f(outline_program.loc("uni_outline_position_fac"),
+                               outline_position_fac);
 
         outline_pass.draw();
 
