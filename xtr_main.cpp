@@ -103,6 +103,13 @@ int main(int argc, char *argv[]) {
     const char *pp_effects[] = {"None", "Halftone"};
     int pp_effect = 0;
 
+    float dot_size = 4.0;
+    // https://en.wikipedia.org/wiki/Halftone#/media/File:CMYK_screen_angles.svg
+    float rotation_c = 15.;
+    float rotation_m = 75.;
+    float rotation_y = 0.;
+    float rotation_k = 45.;
+
     app.enable_imgui = true;
     while (app.is_running()) {
         if (app.is_window_resized()) {
@@ -265,6 +272,13 @@ int main(int argc, char *argv[]) {
             if (ImGui::TreeNode("Post-processing")) {
                 ImGui::Combo("Post-processing effect", &pp_effect, pp_effects,
                              2);
+                if (pp_effect == 1) {
+                    ImGui::DragFloat("Dot size", &dot_size);
+                    ImGui::DragFloat("Rotation C", &rotation_c);
+                    ImGui::DragFloat("Rotation M", &rotation_m);
+                    ImGui::DragFloat("Rotation Y", &rotation_y);
+                    ImGui::DragFloat("Rotation K", &rotation_k);
+                }
                 ImGui::TreePop();
             }
             ImGui::End();
@@ -354,6 +368,20 @@ int main(int argc, char *argv[]) {
         pp_program.uni_1i(pp_program.loc("uni_id"), 69);
 
         pp_program.uni_1i(pp_program.loc("uni_pp_effect"), pp_effect);
+
+        const float PI = 3.14159265358979;
+        const float DEG2RAD = PI / 180.;
+
+        pp_program.uni_1f(pp_program.loc("uni_dot_size"), dot_size);
+        // https://en.wikipedia.org/wiki/Halftone#/media/File:CMYK_screen_angles.svg
+        pp_program.uni_1f(pp_program.loc("uni_rotation_c"),
+                          rotation_c * DEG2RAD);
+        pp_program.uni_1f(pp_program.loc("uni_rotation_m"),
+                          rotation_m * DEG2RAD);
+        pp_program.uni_1f(pp_program.loc("uni_rotation_y"),
+                          rotation_y * DEG2RAD);
+        pp_program.uni_1f(pp_program.loc("uni_rotation_k"),
+                          rotation_k * DEG2RAD);
 
         pp_pass.draw();
 

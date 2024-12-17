@@ -12,6 +12,12 @@ uniform int uni_id;
 
 uniform int uni_pp_effect;
 
+uniform float uni_dot_size;
+uniform float uni_rotation_c;
+uniform float uni_rotation_m;
+uniform float uni_rotation_y;
+uniform float uni_rotation_k;
+
 // https://www.rapidtables.com/convert/color/rgb-to-cmyk.html
 vec4 rgb2cmyk(vec3 rgb) {
     float k = 1. - max(rgb.r, max(rgb.g, rgb.b));
@@ -47,21 +53,11 @@ void main() {
     else {
         vec2 frag_coord = uv * uni_screen_size;
 
-        const float PI = 3.14159265358979;
-        const float DEG2RAD = PI / 180.;
-
-        const float DOT_SIZE = 4.0;
-        // https://en.wikipedia.org/wiki/Halftone#/media/File:CMYK_screen_angles.svg
-        const float ROTATION_C = 15. * DEG2RAD;
-        const float ROTATION_M = 75. * DEG2RAD;
-        const float ROTATION_Y = 0. * DEG2RAD;
-        const float ROTATION_K = 45. * DEG2RAD;
-
         // nearest dot location
-        vec2 uv_c = rotate(round(rotate(frag_coord, ROTATION_C) / DOT_SIZE) * DOT_SIZE, -ROTATION_C);
-        vec2 uv_m = rotate(round(rotate(frag_coord, ROTATION_M) / DOT_SIZE) * DOT_SIZE, -ROTATION_M);
-        vec2 uv_y = rotate(round(rotate(frag_coord, ROTATION_Y) / DOT_SIZE) * DOT_SIZE, -ROTATION_Y);
-        vec2 uv_k = rotate(round(rotate(frag_coord, ROTATION_K) / DOT_SIZE) * DOT_SIZE, -ROTATION_K);
+        vec2 uv_c = rotate(round(rotate(frag_coord, uni_rotation_c) / uni_dot_size) * uni_dot_size, -uni_rotation_c);
+        vec2 uv_m = rotate(round(rotate(frag_coord, uni_rotation_m) / uni_dot_size) * uni_dot_size, -uni_rotation_m);
+        vec2 uv_y = rotate(round(rotate(frag_coord, uni_rotation_y) / uni_dot_size) * uni_dot_size, -uni_rotation_y);
+        vec2 uv_k = rotate(round(rotate(frag_coord, uni_rotation_k) / uni_dot_size) * uni_dot_size, -uni_rotation_k);
 
         // distance to nearest dot
         float d_c = distance(frag_coord, uv_c);
@@ -76,10 +72,10 @@ void main() {
         float v_k = rgb2cmyk(texture(uni_frame, uv_k / uni_screen_size).rgb).w;
 
         // final mask
-        vec3 col_c = vec3(1.) - vec3(1., 0., 0.) * soft_threshold(d_c, v_c / sqrt(2.) * DOT_SIZE);
-        vec3 col_m = vec3(1.) - vec3(0., 1., 0.) * soft_threshold(d_m, v_m / sqrt(2.) * DOT_SIZE);
-        vec3 col_y = vec3(1.) - vec3(0., 0., 1.) * soft_threshold(d_y, v_y / sqrt(2.) * DOT_SIZE);
-        vec3 col_k = vec3(1.) - vec3(1.) * soft_threshold(d_k, v_k / sqrt(2.) * DOT_SIZE);
+        vec3 col_c = vec3(1.) - vec3(1., 0., 0.) * soft_threshold(d_c, v_c / sqrt(2.) * uni_dot_size);
+        vec3 col_m = vec3(1.) - vec3(0., 1., 0.) * soft_threshold(d_m, v_m / sqrt(2.) * uni_dot_size);
+        vec3 col_y = vec3(1.) - vec3(0., 0., 1.) * soft_threshold(d_y, v_y / sqrt(2.) * uni_dot_size);
+        vec3 col_k = vec3(1.) - vec3(1.) * soft_threshold(d_k, v_k / sqrt(2.) * uni_dot_size);
 
         // combined result
         frag_color = vec4(vec3(col_c * col_m * col_y * col_k), 1.);
