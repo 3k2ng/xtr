@@ -44,6 +44,7 @@ void main()
             for (int j = 0; j < 2; j++) {
                 int x_offset = (i * 2) - 1;
                 int y_offset = (j * 2) - 1;
+                int array_index = j + i * 2;
                 int sampled_id = int(texture(
                             uni_id_map,
                             vec2(
@@ -51,19 +52,14 @@ void main()
                                 uv.y - (y_offset / uni_screen_size.y)
                             )
                         ).x);
-                // samples[j + i * 2] = texture(
-                //         uni_position,
-                //         vec2(
-                //             uv.x - (x_offset / uni_screen_size.x),
-                //             uv.y - (y_offset / uni_screen_size.y)
-                //         )
-                //     ).xyz;
-                if (sampled_id != uni_id) {
-                    samples[j + i * 2] = vec3(1000.);
-                }
-                else {
-                    samples[j + i * 2] = vec3(0.);
-                }
+                samples[array_index] = texture(
+                        uni_position,
+                        vec2(
+                            uv.x - (x_offset / uni_screen_size.x),
+                            uv.y - (y_offset / uni_screen_size.y)
+                        )
+                    ).xyz;
+                samples[array_index] += vec3(float(sampled_id));
             }
         }
 
@@ -86,7 +82,7 @@ void main()
             for (int j = 0; j < 3; j++) {
                 int x_offset = i - 1;
                 int y_offset = j - 1;
-
+                int array_index = j + i * 3;
                 int sampled_id = int(texture(
                             uni_id_map,
                             vec2(
@@ -94,19 +90,14 @@ void main()
                                 uv.y - (y_offset / uni_screen_size.y)
                             )
                         ).x);
-                // samples[j + i * 3] = texture(
-                //         uni_position,
-                //         vec2(
-                //             uv.x - (x_offset / uni_screen_size.x),
-                //             uv.y - (y_offset / uni_screen_size.y)
-                //         )
-                //     ).xyz;
-                if (sampled_id != uni_id) {
-                    samples[j + i * 3] = vec3(1000.);
-                }
-                else {
-                    samples[j + i * 3] = vec3(0.);
-                }
+                samples[array_index] = texture(
+                        uni_position,
+                        vec2(
+                            uv.x - (x_offset / uni_screen_size.x),
+                            uv.y - (y_offset / uni_screen_size.y)
+                        )
+                    ).xyz;
+                samples[array_index] += vec3(float(sampled_id));
             }
         }
 
