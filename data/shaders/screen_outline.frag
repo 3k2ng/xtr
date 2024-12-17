@@ -60,6 +60,13 @@ void main()
                         )
                     ).xyz;
                 samples[array_index] += vec3(float(sampled_id));
+                samples[array_index] += texture(
+                        uni_normal,
+                        vec2(
+                            uv.x - (x_offset / uni_screen_size.x),
+                            uv.y - (y_offset / uni_screen_size.y)
+                        )
+                    ).xyz;
             }
         }
 
@@ -98,6 +105,13 @@ void main()
                         )
                     ).xyz;
                 samples[array_index] += vec3(float(sampled_id));
+                samples[array_index] += texture(
+                        uni_normal,
+                        vec2(
+                            uv.x - (x_offset / uni_screen_size.x),
+                            uv.y - (y_offset / uni_screen_size.y)
+                        )
+                    ).xyz;
             }
         }
 

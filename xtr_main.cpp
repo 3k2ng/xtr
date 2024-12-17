@@ -96,6 +96,9 @@ int main(int argc, char *argv[]) {
 
     float outline_col[3];
     float outline_thr = 0.4f;
+    bool outline_id_weight = true;
+    float outline_normal_weight = 0.5f;
+    float outline_position_weight = 1.f;
 
     const char *pp_effects[] = {"None", "Halftone"};
     int pp_effect = 0;
