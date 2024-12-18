@@ -32,10 +32,6 @@ vec2 rotate(vec2 v, float r) {
     return v * mat2(cos(r), sin(r), -sin(r), cos(r));
 }
 
-vec2 vec2div(vec2 v0, vec2 v1) {
-    return vec2(v0.x / v1.x, v0.y / v1.y);
-}
-
 float soft_threshold(float value, float threshold) {
     float v = threshold - value;
     if (v < -1.) return 0.;

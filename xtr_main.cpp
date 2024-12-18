@@ -70,6 +70,8 @@ int main(int argc, char *argv[]) {
                                      "Specular highlights"};
     int detail_mapping = 0;
 
+    bool nl_halftone = false;
+
     const char *outline_types[] = {"Off", "Near-silhouette", "Roberts Cross",
                                    "Sobel"};
     int outline_type = 0;
@@ -168,8 +170,10 @@ int main(int argc, char *argv[]) {
                 ImGui::DragFloat("Outline Threshold", &outline_thr, 0.01f, 0.f,
                                  1.f);
                 ImGui::Checkbox("Outline ID Factor", &outline_id_fac);
-                ImGui::DragFloat("Outline Normal Factor", &outline_normal_fac, 0.01f, 0.f, 1.f);
-                ImGui::DragFloat("Outline Position Factor", &outline_position_fac, 0.01f, 0.f, 1.f);
+                ImGui::DragFloat("Outline Normal Factor", &outline_normal_fac,
+                                 0.01f, 0.f, 1.f);
+                ImGui::DragFloat("Outline Position Factor",
+                                 &outline_position_fac, 0.01f, 0.f, 1.f);
                 ImGui::ColorPicker3("Outline Colour", &outline_col[0]);
                 ImGui::TreePop();
             }
@@ -204,8 +208,8 @@ int main(int argc, char *argv[]) {
             }
 
             ImGui::Separator();
-            // texture settings
-            if (ImGui::TreeNode("Texture")) {
+            // tonemap selection
+            if (ImGui::TreeNode("Tonemap")) {
                 if (ImGui::BeginCombo(
                         "Texture",
                         texture_files[selected_texture].filename().c_str())) {
@@ -223,6 +227,9 @@ int main(int argc, char *argv[]) {
                     }
                     ImGui::EndCombo();
                 }
+                GLuint tonemap_texture_id = tonemap_texture;
+                ImGui::Image((void *)(intptr_t)tonemap_texture_id,
+                             ImVec2(256, 256));
                 ImGui::TreePop();
             }
 
@@ -244,6 +251,8 @@ int main(int argc, char *argv[]) {
                 } else if (detail_mapping == 3) { // Specular highlights
                     ImGui::DragFloat("Shininess", &specular_s, 1e-2f, 1e-3f,
                                      1e4f);
+                }
+                if (ImGui::Checkbox("halftone", &nl_halftone)) {
                 }
                 ImGui::TreePop();
             }
@@ -347,6 +356,8 @@ int main(int argc, char *argv[]) {
                                    cosf(light_theta),
                                    sinf(light_theta) * sinf(light_phi),
                                });
+
+        xtoon_program.uni_1i(xtoon_program.loc("uni_nl_halftone"), nl_halftone);
 
         xtoon_pass.draw();
         frame_fb.unbind();

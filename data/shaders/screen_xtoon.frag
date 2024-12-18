@@ -26,6 +26,13 @@ uniform float uni_dof_z_c;
 
 uniform vec3 uni_light_dir;
 
+uniform bool uni_nl_halftone;
+
+// matrix rotation
+vec2 rotate(vec2 v, float r) {
+    return v * mat2(cos(r), sin(r), -sin(r), cos(r));
+}
+
 void main()
 {
     int id = int(texture(uni_id_map, uv).x);
@@ -34,6 +41,19 @@ void main()
     vec3 position = texture(uni_position, uv).xyz;
     vec3 normal = texture(uni_normal, uv).xyz;
     float nl = dot(normal, uni_light_dir);
+
+    if (uni_nl_halftone)
+    {
+        const float DOT_SIZE = 4.0;
+        const float ROTATION = 0.;
+
+        vec2 frag_coord = uv * uni_screen_size;
+
+        vec2 uv_nl = rotate(round(rotate(frag_coord, ROTATION) / DOT_SIZE) * DOT_SIZE, -ROTATION);
+        float d_nl = distance(frag_coord, uv_nl) * sqrt(2.0) / DOT_SIZE;
+        float v_nl = dot(texture(uni_normal, uv_nl / uni_screen_size).xyz, uni_light_dir);
+        nl = float(d_nl < v_nl);
+    }
 
     // level of abstraction
     if (uni_detail_mapping == 0) {
