@@ -1,4 +1,5 @@
 #include <imgui.h>
+#include <numbers>
 #include <optional>
 #include <xtr_app.h>
 #include <xtr_buffer.h>
@@ -101,6 +102,7 @@ int main(int argc, char *argv[]) {
     bool outline_id_fac = true;
     float outline_normal_fac = 1.f;
     float outline_position_fac = 1.f;
+    float outline_edge_fac = 1.f;
 
     const char *pp_effects[] = {"None", "Halftone"};
     int pp_effect = 0;
@@ -174,6 +176,8 @@ int main(int argc, char *argv[]) {
                                  0.01f, 0.f, 1.f);
                 ImGui::DragFloat("Outline Position Factor",
                                  &outline_position_fac, 0.01f, 0.f, 1.f);
+                ImGui::DragFloat("Outline Edge Factor",
+                                 &outline_edge_fac, 0.01f, 0.f, 1.f);
                 ImGui::ColorPicker3("Outline Colour", &outline_col[0]);
                 ImGui::TreePop();
             }
@@ -383,7 +387,7 @@ int main(int argc, char *argv[]) {
 
         pp_program.uni_1i(pp_program.loc("uni_pp_effect"), pp_effect);
 
-        const float PI = 3.14159265358979;
+        const float PI = std::numbers::pi;
         const float DEG2RAD = PI / 180.;
 
         pp_program.uni_1f(pp_program.loc("uni_dot_size"), dot_size);
@@ -436,8 +440,15 @@ int main(int argc, char *argv[]) {
                                outline_normal_fac);
         outline_program.uni_1f(outline_program.loc("uni_outline_position_fac"),
                                outline_position_fac);
+        outline_program.uni_1f(outline_program.loc("uni_outline_edge_fac"),
+                               outline_edge_fac);
+        
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         outline_pass.draw();
+
+        glDisable(GL_BLEND);
 
         app.end_frame();
     }

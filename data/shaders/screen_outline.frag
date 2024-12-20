@@ -21,6 +21,7 @@ uniform float uni_outline_thr;
 uniform int uni_outline_id_fac;
 uniform float uni_outline_normal_fac;
 uniform float uni_outline_position_fac;
+uniform float uni_outline_edge_fac;
 
 void calculate_sample(int x_offset, int y_offset, out vec3 sample)
 {
@@ -65,7 +66,7 @@ void main()
     // naive outline method (normal dot view)
     if (uni_outline_type == 1) {
         float outline = abs(dot(normal, uni_camera_dir));
-        if (outline < uni_outline_thr) frag_color = vec4(uni_outline_col, 1.f);
+        if (outline < uni_outline_thr) frag_color = vec4(uni_outline_col, outline);
         else discard;
     }
     // edge detection method (roberts cross)
@@ -89,7 +90,8 @@ void main()
 
         float edge = sqrt(dot(horizontal, horizontal) + dot(vertical, vertical));
 
-        if (edge > 1.f - uni_outline_thr) frag_color = vec4(uni_outline_col, clamp(edge, 0.f, 1.f));
+        // if (edge > 1.f - uni_outline_thr) frag_color = vec4(uni_outline_col, clamp(edge * uni_outline_edge_fac, 0.f, 1.f));
+        if (edge > 1.f - uni_outline_thr) frag_color = vec4(uni_outline_col, uni_outline_edge_fac);
         else discard;
     }
     // edge detection method (sobel operator)
@@ -121,7 +123,8 @@ void main()
 
         float edge = sqrt(dot(horizontal, horizontal) + dot(vertical, vertical));
 
-        if (edge > 1.f - uni_outline_thr) frag_color = vec4(uni_outline_col, clamp(edge, 0.f, 1.f));
+        // if (edge > 1.f - uni_outline_thr) frag_color = vec4(uni_outline_col, clamp(edge * uni_outline_edge_fac, 0.f, 1.f));
+        if (edge > 1.f - uni_outline_thr) frag_color = vec4(uni_outline_col, uni_outline_edge_fac);
         else discard;
     }
     else discard;
