@@ -52,7 +52,7 @@ void main()
         vec2 uv_nl = rotate(round(rotate(frag_coord, uni_rotation) / uni_dot_size) * uni_dot_size, -uni_rotation);
         float d_nl = distance(frag_coord, uv_nl) * sqrt(2.0) / uni_dot_size;
         float v_nl = dot(texture(uni_normal, uv_nl / uni_screen_size).xyz, uni_light_dir);
-        nl = float(d_nl < v_nl);
+        nl *= float(d_nl < v_nl);
     }
 
     // level of abstraction
