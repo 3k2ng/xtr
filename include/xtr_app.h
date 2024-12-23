@@ -1,3 +1,5 @@
+// container for window creation, opengl context creation and input handling
+// using SDL
 #pragma once
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
@@ -49,6 +51,7 @@ class App {
         SDL_Quit();
     }
 
+    // check if the window is closing, and also update the input
     inline bool is_running() {
         ImGuiIO &io = ImGui::GetIO();
         SDL_Event event;
@@ -116,6 +119,7 @@ class App {
         return true;
     }
 
+    // start rendering
     inline void start_frame() const {
         if (enable_imgui) {
             ImGui_ImplOpenGL3_NewFrame();
@@ -124,6 +128,7 @@ class App {
         }
     }
 
+    // end rendering
     inline void end_frame() const {
         if (enable_imgui) {
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

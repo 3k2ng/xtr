@@ -1,4 +1,5 @@
 #version 330 core
+// hardcoded triangle that cover the whole screen
 vec2 positions[] = vec2[](
         vec2(-3., -1.),
         vec2(1., -1.),

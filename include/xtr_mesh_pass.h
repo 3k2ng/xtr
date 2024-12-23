@@ -1,3 +1,9 @@
+// standard procedure for loading and rendering a mesh into a framebuffer
+// resulting framebuffer includes
+// - position buffer
+// - normal buffer
+// - object id buffer
+
 #pragma once
 #include <xtr_buffer.h>
 #include <xtr_framebuffer.h>
@@ -38,6 +44,7 @@ class MeshPass {
         _framebuffer.unbind();
     }
 
+    // resize all of the buffers
     inline void resize(const int width, const int height) {
         _position_texture.bind();
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB,
@@ -60,6 +67,7 @@ class MeshPass {
         _depth_buffer.unbind();
     }
 
+    // upload a mesh for drawing
     inline void upload_mesh(const xtr::Mesh &mesh) {
         _draw_count = mesh.indices.size();
         _array.bind();
@@ -67,6 +75,7 @@ class MeshPass {
         _array.unbind();
     }
 
+    // clear color and depth buffer
     inline void clear_buffer() const {
         _framebuffer.bind();
         glClearColor(0, 0, 0, 0);
@@ -74,6 +83,7 @@ class MeshPass {
         _framebuffer.unbind();
     }
 
+    // render into buffer, with model-view-projection, normal_factor, and id
     inline void draw(const glm::mat4 &model_matrix,
                      const glm::mat4 &view_matrix,
                      const glm::mat4 &projection_matrix,
@@ -94,6 +104,7 @@ class MeshPass {
     inline void bind_framebuffer() const { _framebuffer.bind(); }
     inline void unbind_framebuffer() const { _framebuffer.unbind(); }
 
+    // bind current buffers as textures
     inline void bind_buffers(const int uni_position, const int uni_normal,
                              const int uni_id) {
         if (uni_position >= 0) {
