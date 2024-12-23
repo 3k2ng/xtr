@@ -1,3 +1,4 @@
+// raii object for opengl texture object
 #pragma once
 #include <SDL2/SDL.h>
 #include <SDL_image.h>
@@ -37,6 +38,7 @@ class Texture {
     inline const GLenum target() const { return _target; }
     inline operator GLuint() const { return _texture; }
 
+    // load texture from sdl surface
     inline void load_surface(const SDL_Surface &surface,
                              const bool is_repeat = false,
                              const bool is_linear = false) {
@@ -48,6 +50,7 @@ class Texture {
         unbind();
     }
 
+    // load texture from file
     inline void load_file(const std::filesystem::path &file_path,
                           const bool is_repeat = false,
                           const bool is_linear = false) {

@@ -1,3 +1,5 @@
+// xtoon screen pass
+// use the 3 buffer produced by the mesh pass, and a tonemap
 #version 330 core
 layout(location = 0) out vec4 frag_color;
 
@@ -37,6 +39,7 @@ vec2 rotate(vec2 v, float r) {
 
 void main()
 {
+    // only render if the id matches
     int id = int(texture(uni_id_map, uv).x);
     if (uni_id != id) discard;
 

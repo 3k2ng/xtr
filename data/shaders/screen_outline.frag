@@ -26,7 +26,7 @@ uniform float uni_outline_edge_fac;
 // Helper function to calculate the desired weight value for each pixel
 // This weight value is based on ID, position and normal.
 // Then, the nearby weight values are calculated and convolved with the desired operators.
-void calculate_sample(int x_offset, int y_offset, out vec3 sample)
+void calculate_sample(int x_offset, int y_offset, out vec3 sample )
 {
     // Account for ID
     int sampled_id = int(texture(
@@ -36,23 +36,23 @@ void calculate_sample(int x_offset, int y_offset, out vec3 sample)
                     uv.y - (y_offset / uni_screen_size.y)
                 )
             ).x);
-    sample = vec3(float(sampled_id)) * uni_outline_id_fac;
-    // Account for position
-    sample += texture(
-            uni_position,
-            vec2(
-                uv.x - (x_offset / uni_screen_size.x),
-                uv.y - (y_offset / uni_screen_size.y)
-            )
-        ).xyz * uni_outline_position_fac;
-    // Account for normal
-    sample += texture(
-            uni_normal,
-            vec2(
-                uv.x - (x_offset / uni_screen_size.x),
-                uv.y - (y_offset / uni_screen_size.y)
-            )
-        ).xyz * uni_outline_normal_fac;
+    sample = vec3(float(sampled_id))* uni_outline_id_fac;
+// Account for position
+sample += texture(
+    uni_position,
+    vec2(
+        uv.x-(x_offset/uni_screen_size.x),
+        uv.y-(y_offset/uni_screen_size.y)
+    )
+). xyz * uni_outline_position_fac;
+// Account for normal
+sample += texture(
+    uni_normal,
+    vec2(
+        uv.x-(x_offset/uni_screen_size.x),
+        uv.y-(y_offset/uni_screen_size.y)
+    )
+). xyz * uni_outline_normal_fac;
 }
 
 void main()
@@ -142,3 +142,4 @@ void main()
 }
 
 // if (edge > 1.f - uni_outline_thr) frag_color = vec4(uni_outline_col, clamp(edge * uni_outline_edge_fac, 0.f, 1.f));
+
