@@ -12,19 +12,30 @@
 #include <xtr_texture.h>
 
 int main(int argc, char *argv[]) {
+    // initialize app
     xtr::App app{800, 600};
+    // enable depth buffer
     glEnable(GL_DEPTH_TEST);
+    // enable back face culling
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
+    // xtoon shader as a screen pass
     xtr::ScreenPass xtoon_pass{"./data/shaders/screen_xtoon.frag"};
+    // outline shader
     xtr::ScreenPass outline_pass{"./data/shaders/screen_outline.frag"};
+    // post-processing shader
     xtr::ScreenPass pp_pass{"./data/shaders/screen_pp.frag"};
+    // mesh pass to generate buffers necessary for xtoon and outline shader
     xtr::MeshPass mesh_pass(app.get_screen_width(), app.get_screen_height());
+    // initialize camera object
     xtr::TurnTableCamera camera{1.f, 11.f / 24.f * glm::pi<float>(), 0., {}};
+    // default model matrix
     glm::mat4 model_matrix{1.};
+    // default perspective projection matrix
     glm::mat4 projection_matrix =
         glm::perspective(glm::half_pi<float>(), 4.f / 3.f, 1e-3f, 1e4f);
 
+    // aggregate model file directories into a list
     const std::filesystem::path mesh_directory = "./data/models";
     std::vector<std::filesystem::path> mesh_files;
     for (const auto &file :
@@ -32,9 +43,10 @@ int main(int argc, char *argv[]) {
         mesh_files.push_back(file);
     }
 
-    // Load default mesh
+    // Load default model
     mesh_pass.upload_mesh(xtr::load_mesh(mesh_files[0], 0, true, true));
 
+    // aggregate tonemap file directories into a list
     const std::filesystem::path texture_directory = "./data/textures";
     std::vector<std::filesystem::path> texture_files;
     for (const auto &file :
@@ -46,6 +58,7 @@ int main(int argc, char *argv[]) {
     // Load default tonemap texture
     tonemap_texture.load_file(texture_files[0]);
 
+    // create framebuffer and included frame texture for post-processing
     xtr::Texture frame_texture{GL_TEXTURE_2D};
     frame_texture.bind();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, app.get_screen_width(),
@@ -64,20 +77,39 @@ int main(int argc, char *argv[]) {
                               GL_RENDERBUFFER, frame_rb);
     frame_fb.unbind();
 
+    // model selection
     int selected_mesh = 0;
+    // is y the up axis
     bool mesh_y_up = true;
+    // is x the front facing direction
     bool mesh_x_front = true;
+
+    // tonemap selection
     int selected_texture = 0;
 
+    // detail mapping selection
     const char *detail_mappings[] = {"LOA", "Depth-of-field", "Near-silhouette",
                                      "Specular highlights"};
     int detail_mapping = 0;
 
-    bool nl_halftone = false;
+    // X-Toon Halftone
+    bool nl_halftone = false;           // halftone enabled?
+    float xtoon_halftone_dot_size = 4.; // dot size
+    float xtoon_halftone_rotation = 0.; // orientation angle
 
+    // outline options
     const char *outline_types[] = {"Off", "Near-silhouette", "Roberts Cross",
                                    "Sobel"};
     int outline_type = 0;
+
+    // outline parameters
+    float outline_col[3];
+    float outline_thr = 0.4f;
+    bool outline_id_fac = true; // use id to get object outline
+    // edge difference contribution
+    float outline_normal_fac = 1.f;
+    float outline_position_fac = 1.f;
+    float outline_edge_fac = 1.f;
 
     // Depth-based attribute mapping
     float dbam_z_min = 0.5f;
@@ -90,33 +122,30 @@ int main(int argc, char *argv[]) {
     // Specular highlights
     float specular_s = 1.;
 
-    // X-Toon Halftone
-    float xtoon_halftone_dot_size = 4.;
-    float xtoon_halftone_rotation = 0.;
-
+    // abstracted shape/abstracted normal options
     const char *abstracted_shapes[] = {"Smooth", "Ellipse", "Cylinder",
                                        "Sphere"};
     int abstracted_shape = 0;
     float normal_factor = 0.;
 
-    float light_theta, light_phi;
+    // lighting options
+    float light_theta, light_phi; // a spherical light is controlled by 2 angles
 
+    // background color
     float background_col[4] = {0.1f, 0.5f, 0.8f, 1.f};
 
-    float outline_col[3];
-    float outline_thr = 0.4f;
-    bool outline_id_fac = true;
-    float outline_normal_fac = 1.f;
-    float outline_position_fac = 1.f;
-    float outline_edge_fac = 1.f;
-
+    // post-processing options
+    // select the effect
     const char *pp_effects[] = {"None", "Halftone"};
     int pp_effect = 0;
 
     const float PI = std::numbers::pi;
     const float DEG2RAD = PI / 180.;
 
+    // parameters for halftone post-processing effect
     float dot_size = 4.0;
+    // orientation angles for different layers, the default is referenced in the
+    // following link:
     // https://en.wikipedia.org/wiki/Halftone#/media/File:CMYK_screen_angles.svg
     float rotation_c = 15.;
     float rotation_m = 75.;
@@ -125,6 +154,8 @@ int main(int argc, char *argv[]) {
 
     app.enable_imgui = true;
     while (app.is_running()) {
+        // check if the window is resized, if so, resize all the screen buffers
+        // and the viewport
         if (app.is_window_resized()) {
             mesh_pass.resize(app.get_screen_width(), app.get_screen_height());
             frame_texture.bind();
@@ -138,13 +169,14 @@ int main(int argc, char *argv[]) {
                                   app.get_screen_height());
             frame_rb.unbind();
             glViewport(0, 0, app.get_screen_width(), app.get_screen_height());
+            projection_matrix = glm::perspective(
+                glm::half_pi<float>(),
+                static_cast<float>(app.get_screen_width()) /
+                    static_cast<float>(app.get_screen_height()),
+                1e-3f, 1e4f);
         }
 
-        projection_matrix =
-            glm::perspective(glm::half_pi<float>(),
-                             static_cast<float>(app.get_screen_width()) /
-                                 static_cast<float>(app.get_screen_height()),
-                             1e-3f, 1e4f);
+        // check mousr and keyboard inputs for controls
         if (app.is_button_down(SDL_BUTTON_LEFT)) {
             camera.set_phi(camera.get_phi() + (app.get_mouse_delta().x * 30.f));
             camera.set_theta(camera.get_theta() +
@@ -162,6 +194,7 @@ int main(int argc, char *argv[]) {
         camera.update_origin(origin_delta);
 
         app.start_frame();
+        // imgui panel
         if (app.enable_imgui) {
             ImGui::Begin("panel");
             // camera settings
@@ -198,6 +231,8 @@ int main(int argc, char *argv[]) {
                         "Mesh", mesh_files[selected_mesh].filename().c_str())) {
                     for (int i = 0; i < mesh_files.size(); ++i) {
                         const bool is_selected = selected_mesh == i;
+                        // when a mesh is selected, load the corresponding mesh
+                        // from the list
                         if (ImGui::Selectable(mesh_files[i].filename().c_str(),
                                               is_selected)) {
                             selected_mesh = i;
@@ -213,6 +248,7 @@ int main(int argc, char *argv[]) {
                 }
                 if (ImGui::Checkbox("y_up", &mesh_y_up) ||
                     ImGui::Checkbox("x_front", &mesh_x_front)) {
+                    // any of the orientation options also reload the mesh
                     mesh_pass.upload_mesh(xtr::load_mesh(
                         mesh_files[selected_mesh], abstracted_shape, mesh_y_up,
                         mesh_x_front));
@@ -227,6 +263,8 @@ int main(int argc, char *argv[]) {
                         "Texture",
                         texture_files[selected_texture].filename().c_str())) {
                     for (int i = 0; i < texture_files.size(); ++i) {
+                        // when a tonemap is selected, load the corresponding
+                        // tonemap from the list
                         const bool is_selected = selected_texture == i;
                         if (ImGui::Selectable(
                                 texture_files[i].filename().c_str(),
@@ -240,6 +278,7 @@ int main(int argc, char *argv[]) {
                     }
                     ImGui::EndCombo();
                 }
+                // display the selected tonemap
                 GLuint tonemap_texture_id = tonemap_texture;
                 ImGui::Image((void *)(intptr_t)tonemap_texture_id,
                              ImVec2(256, 256));
@@ -312,10 +351,13 @@ int main(int argc, char *argv[]) {
             ImGui::End();
             ImGui::Render();
         }
+
+        // draw mesh into framebuffer
         mesh_pass.clear_buffer();
         mesh_pass.draw(model_matrix, camera.view_matrix(), projection_matrix,
                        normal_factor, 69);
 
+        // read framebuffer to pick the point C for depth-of-field effect
         mesh_pass.bind_framebuffer();
         glReadBuffer(GL_COLOR_ATTACHMENT0);
         std::vector<glm::vec3> position_buffer(app.get_screen_width() *
@@ -330,6 +372,7 @@ int main(int argc, char *argv[]) {
         }
         mesh_pass.unbind_framebuffer();
 
+        // xtoon rendering
         frame_fb.bind();
         mesh_pass.bind_buffers(0, 1, 2);
         glActiveTexture(GL_TEXTURE3);
@@ -385,6 +428,7 @@ int main(int argc, char *argv[]) {
         glActiveTexture(GL_TEXTURE0);
         frame_texture.bind();
 
+        // apply post-processing pass before the outline
         mesh_pass.bind_buffers(-1, -1, 1);
         glClearColor(background_col[0], background_col[1], background_col[2],
                      background_col[3]);
@@ -416,7 +460,9 @@ int main(int argc, char *argv[]) {
 
         pp_pass.draw();
 
+        // outline pass
         mesh_pass.bind_buffers(0, 1, 2);
+        // only clear depth buffer to draw the outline on the current render
         glClear(GL_DEPTH_BUFFER_BIT);
         const xtr::Program &outline_program = outline_pass.get_program();
         outline_program.use();
@@ -456,11 +502,10 @@ int main(int argc, char *argv[]) {
         outline_program.uni_1f(outline_program.loc("uni_outline_edge_fac"),
                                outline_edge_fac);
 
+        // enable alpha blending during outline drawing
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
         outline_pass.draw();
-
         glDisable(GL_BLEND);
 
         app.end_frame();
