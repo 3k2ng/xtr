@@ -1,3 +1,4 @@
+// raii object for shader and program
 #pragma once
 #include <filesystem>
 #include <fstream>
@@ -7,8 +8,10 @@
 #include <sstream>
 
 namespace xtr {
+// shader object, load and compile shaders
 class Shader {
   public:
+    // load shader from file
     static Shader from_file(const std::filesystem::path &file_path,
                             GLenum shader_type) {
         std::ifstream ifs(file_path);
@@ -53,6 +56,7 @@ class Shader {
     GLuint _shader;
 };
 
+// program object, link program and set uniform values
 class Program {
   public:
     Program() : _program{glCreateProgram()} {};
@@ -86,9 +90,12 @@ class Program {
 
     inline void use() const { glUseProgram(_program); }
 
+    // uniform variable location from variable name
     inline GLint loc(const std::string &name) const {
         return glGetUniformLocation(_program, name.c_str());
     }
+
+    // set uniform variable for some built-in types
 
     inline void uni_1f(const GLint loc, const GLfloat v0) const {
         glUniform1f(loc, v0);
@@ -157,6 +164,7 @@ class Program {
     GLuint _program;
 };
 
+// load standard vertex shader and fragment shader combo
 inline Program load_program(const std::filesystem::path &vert,
                             const std::filesystem::path &frag) {
     xtr::Program program{};

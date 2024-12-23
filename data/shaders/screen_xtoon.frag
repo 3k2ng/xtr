@@ -1,47 +1,115 @@
+// xtoon screen pass
+// use the 3 buffer produced by the mesh pass, and a tonemap
 #version 330 core
 layout(location = 0) out vec4 frag_color;
 
 in vec2 uv;
 
-uniform sampler2D uni_nl;
-uniform sampler2D uni_tonemap;
-uniform sampler2D uni_z_buffer;
-uniform sampler2D uni_obam;
+uniform vec2 uni_screen_size;
 
-uniform bool uni_use_obam;
-uniform bool uni_use_dof;
-uniform bool uni_use_specular;
+uniform sampler2D uni_position;
+uniform sampler2D uni_normal;
+uniform sampler2D uni_id_map;
+uniform sampler2D uni_tonemap;
+
+uniform int uni_id;
+
+uniform vec3 uni_camera_pos;
+uniform vec3 uni_camera_dir;
+
+uniform int uni_detail_mapping;
+
+uniform float uni_near_silhouette_r; // near-silhouette r
+uniform float uni_specular_s; // specular s
 
 uniform float uni_dbam_z_min;
 uniform float uni_dbam_r;
 uniform float uni_dof_z_c;
 
+uniform vec3 uni_light_dir;
+
+uniform bool uni_nl_halftone;
+uniform float uni_dot_size;
+uniform float uni_rotation;
+
+// matrix rotation
+vec2 rotate(vec2 v, float r) {
+    return v * mat2(cos(r), sin(r), -sin(r), cos(r));
+}
+
 void main()
 {
-    float z = texture(uni_z_buffer, uv).x;
-    if (z <= 0.) discard;
+    // only render if the id matches
+    int id = int(texture(uni_id_map, uv).x);
+    if (uni_id != id) discard;
 
-    float nl = texture(uni_nl, uv).x;
-    float dbam;
-    if (uni_use_dof) {
-        if (z < uni_dof_z_c) {
-            float dof_z_min = uni_dof_z_c - uni_dbam_z_min;
-            float dof_z_max = uni_dof_z_c - uni_dbam_r * uni_dbam_z_min;
-            dbam = 1. - log(z / dof_z_min) / log(dof_z_max / dof_z_min);
-        } else {
-            float dof_z_min = uni_dof_z_c + uni_dbam_z_min;
-            float dof_z_max = uni_dof_z_c + uni_dbam_r * uni_dbam_z_min;
-            dbam = log(z / dof_z_max) / log(dof_z_min / dof_z_max);
-        }
-    } else {
-        dbam = 1. - log(z / uni_dbam_z_min) / log(uni_dbam_r * uni_dbam_z_min / uni_dbam_z_min);
+    vec3 position = texture(uni_position, uv).xyz;
+    vec3 normal = texture(uni_normal, uv).xyz;
+    float nl = dot(normal, uni_light_dir);
+
+    // x-toon halftone
+    if (uni_nl_halftone)
+    {
+        // pixel coordinate
+        vec2 frag_coord = uv * uni_screen_size;
+
+        // nearest dot center
+        vec2 uv_nl = rotate(round(rotate(frag_coord, uni_rotation) / uni_dot_size) * uni_dot_size, -uni_rotation);
+        // normalized distance from nearest dot center
+        float d_nl = distance(frag_coord, uv_nl) * sqrt(2.0) / uni_dot_size;
+        // nl sampled at the nearest dot center
+        float v_nl = dot(texture(uni_normal, uv_nl / uni_screen_size).xyz, uni_light_dir);
+        // we simply draw the two ends of the horizontal tonemap, with halftone dithering to fill in the value in-between
+        nl *= float(d_nl < v_nl);
     }
-    float obam = texture(uni_obam, uv).x;
-    // textures are flipped vertically
-    if (uni_use_obam) {
-        frag_color = texture(uni_tonemap, vec2(nl, 1. - obam));
-    }
-    else {
+
+    // level of abstraction
+    if (uni_detail_mapping == 0) {
+        // calculate depth of this pixel
+        float z = dot(normalize(uni_camera_dir), position - uni_camera_pos);
+        // in this mode, D is dependent on the depth of this pixel, compared to the user-specified z_min and r values
+        float z_min = uni_dbam_z_min;
+        float z_max = uni_dbam_z_min * uni_dbam_r;
+        float dbam = 1. - log(z / z_min) / log(z_max / z_min);
+        // textures are flipped vertically
         frag_color = texture(uni_tonemap, vec2(nl, 1. - dbam));
     }
+    // depth of field
+    else if (uni_detail_mapping == 1) {
+        // calculate depth of this pixel
+        float z = length(position - uni_camera_pos);
+        // in this mode, D is dependent on the depth of this pixel, compared to the depth of the user-specified focus point
+        float dbam = 0.;
+        // if this pixel is closer to the camera than the focus point...
+        if (z < uni_dof_z_c) {
+            float z_min_mi = uni_dof_z_c - uni_dbam_z_min;
+            float z_max_mi = uni_dof_z_c - uni_dbam_r * uni_dbam_z_min;
+            dbam = 1. - log(z / z_min_mi) / log(z_max_mi / z_min_mi);
+        }
+        // if this pixel is further from the camera than the focus point...
+        else {
+            float z_min_pl = uni_dof_z_c + uni_dbam_z_min;
+            float z_max_pl = uni_dof_z_c + uni_dbam_r * uni_dbam_z_min;
+            dbam = log(z / z_max_pl) / log(z_min_pl / z_max_pl);
+        }
+        // textures are flipped vertically
+        frag_color = texture(uni_tonemap, vec2(nl, 1. - dbam));
+    }
+    // near-silhouette
+    else if (uni_detail_mapping == 2) {
+        // in this mode, D is dependent on the dot product between the normal and the view vector
+        float obam = pow(abs(dot(normal, uni_camera_dir)), uni_near_silhouette_r);
+        // textures are flipped vertically
+        frag_color = texture(uni_tonemap, vec2(nl, 1. - obam));
+    }
+    // specular
+    else if (uni_detail_mapping == 3) {
+        // calculate reflection vector (phong)
+        vec3 reflected_light_dir = 2. * dot(uni_light_dir, normal) * normal - uni_light_dir;
+        // in this mode, D is dependent on the dot product between the reflection vector and the view vector
+        float obam = pow(abs(dot(uni_camera_dir, reflected_light_dir)), uni_specular_s);
+        // textures are flipped vertically
+        frag_color = texture(uni_tonemap, vec2(nl, 1. - obam));
+    }
+    else discard;
 }

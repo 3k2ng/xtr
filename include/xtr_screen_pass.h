@@ -1,3 +1,6 @@
+// screen rendering procedure
+// used to combine framebuffer data, or perform post-processing on an image
+// the fragment shader is customized
 #pragma once
 #include <xtr_buffer.h>
 #include <xtr_shader.h>
@@ -14,6 +17,8 @@ class ScreenPass {
         _array.unbind();
     }
 
+    // simply draw a big triangle that cover the whole screen
+    // more on screen.vert
     inline void draw() const {
         _program.use();
         _array.bind();

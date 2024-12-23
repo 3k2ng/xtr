@@ -7,6 +7,7 @@
 #include <xtr_mesh.h>
 
 namespace xtr {
+// load .obj file using tiny_obj_loader
 inline std::pair<std::vector<glm::vec3>, std::vector<int>>
 load_obj_file(const std::filesystem::path &file_path) {
     tinyobj::ObjReader r;
@@ -50,6 +51,7 @@ load_obj_file(const std::filesystem::path &file_path) {
     return {vertices, indices};
 }
 
+// load .ply file using miniply
 inline std::pair<std::vector<glm::vec3>, std::vector<int>>
 load_ply_file(const std::filesystem::path &file_path) {
     miniply::PLYReader r(file_path.c_str());
@@ -90,12 +92,16 @@ load_ply_file(const std::filesystem::path &file_path) {
     return {vertices, indices};
 }
 
+// create a mesh from file_path, adjust the orientation and scale, and generate
+// abstracted normal
 inline Mesh load_mesh(const std::filesystem::path &file_path,
                       const int abstracted_shape, const bool y_up,
                       const bool x_front) {
     std::string file_extension = file_path.filename().extension();
     std::pair<std::vector<glm::vec3>, std::vector<int>> loaded_file;
+    // positions
     std::vector<glm::vec3> ps;
+    // position indices, which is equivalent to vertex indices in this case
     std::vector<int> indices;
     if (file_extension == ".obj") {
         loaded_file = load_obj_file(file_path);
@@ -107,6 +113,8 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
     ps.resize(loaded_file.first.size());
     indices = loaded_file.second;
 
+    // we find the bounding box for the mesh, in order to resize and center the
+    // mesh
     glm::vec3 bb_lowest = loaded_file.first[0];
     glm::vec3 bb_highest = loaded_file.first[0];
     for (int i = 1; i < ps.size(); ++i) {
@@ -120,8 +128,8 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
     glm::vec3 bb_center = (bb_highest + bb_lowest) / glm::vec3(2.0);
     glm::vec3 bb_dimension = glm::abs(bb_highest - bb_lowest);
     float bb_diag_size = glm::length(bb_highest - bb_lowest);
-    float bb_scalar = 1000.f / bb_diag_size;
 
+    // center the mesh, using the bounding box center
     for (int i = 0; i < ps.size(); ++i) {
         if (y_up) {
             ps[i].y = loaded_file.first[i].y - bb_center.y;
@@ -143,6 +151,8 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
             }
         }
     }
+
+    // calculate vertex normal
     Mesh mesh;
     std::vector<glm::vec3> vns(ps.size(), glm::vec3{});
     for (int i = 0; i < indices.size(); i += 3) {
@@ -156,11 +166,13 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
     for (int i = 0; i < ps.size(); ++i) {
         vns[i] = glm::normalize(vns[i]);
     }
+
+    // calculate abstracted normal
     std::vector<glm::vec3> ans(ps.size(), glm::vec3{});
     std::vector<Vertex> vertices(ps.size());
     if (abstracted_shape == 0) { // smooth
         std::vector<glm::vec3> tns = vns;
-        const int iterations = 4;
+        const int iterations = 4; // iterations of laplace operator
         for (int it = 0; it < iterations; ++it) {
             for (int i = 0; i < indices.size(); i += 3) {
                 ans[indices[i]] += tns[indices[i + 1]] + tns[indices[i + 2]];
@@ -174,8 +186,7 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
         }
     } else if (abstracted_shape == 1) { // ellipse
         for (int i = 0; i < ps.size(); ++i) {
-            ans[i] = glm::normalize(glm::normalize(ps[i]) *
-                                    bb_dimension);
+            ans[i] = glm::normalize(glm::normalize(ps[i]) * bb_dimension);
         }
     } else if (abstracted_shape == 2) { // cylinder
         for (int i = 0; i < ps.size(); ++i) {
@@ -197,8 +208,9 @@ inline Mesh load_mesh(const std::filesystem::path &file_path,
             ans[i] = glm::normalize(ps[i]);
         }
     }
+    // assembling into mesh
     for (int i = 0; i < ps.size(); ++i) {
-        vertices[i] = {ps[i] * bb_scalar, vns[i], ans[i]};
+        vertices[i] = {ps[i] / bb_diag_size, vns[i], ans[i]};
     }
     return {vertices, indices};
 }

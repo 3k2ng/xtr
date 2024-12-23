@@ -1,3 +1,5 @@
+// raii object for the framebuffer and the renderbuffer
+// mainly use the manage lifetime and binding
 #pragma once
 #include <xtr_shader.h>
 

@@ -1,3 +1,4 @@
+// raii object for VBO and VAO
 #pragma once
 #include <glad/gl.h>
 
@@ -20,11 +21,6 @@ class Buffer {
 
     inline void data(GLsizeiptr size, const GLvoid *data, GLenum usage) const {
         glBufferData(_target, size, data, usage);
-    }
-
-    inline void subdata(GLintptr offset, GLsizeiptr size,
-                        const GLvoid *data) const {
-        glBufferSubData(_target, offset, size, data);
     }
 
     inline void bind() const { glBindBuffer(_target, _buffer); }
