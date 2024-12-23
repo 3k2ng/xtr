@@ -47,11 +47,16 @@ void main()
     // x-toon halftone
     if (uni_nl_halftone)
     {
+        // pixel coordinate
         vec2 frag_coord = uv * uni_screen_size;
 
+        // nearest dot center
         vec2 uv_nl = rotate(round(rotate(frag_coord, uni_rotation) / uni_dot_size) * uni_dot_size, -uni_rotation);
+        // normalized distance from nearest dot center
         float d_nl = distance(frag_coord, uv_nl) * sqrt(2.0) / uni_dot_size;
+        // nl sampled at the nearest dot center
         float v_nl = dot(texture(uni_normal, uv_nl / uni_screen_size).xyz, uni_light_dir);
+        // we simply draw the two ends of the horizontal tonemap, with halftone dithering to fill in the value in-between
         nl *= float(d_nl < v_nl);
     }
 
