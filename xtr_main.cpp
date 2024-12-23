@@ -88,6 +88,10 @@ int main(int argc, char *argv[]) {
     // Specular highlights
     float specular_s = 1.;
 
+    // X-Toon Halftone
+    float xtoon_halftone_dot_size = 4.;
+    float xtoon_halftone_rotation = 0.;
+
     const char *abstracted_shapes[] = {"Smooth", "Ellipse", "Cylinder",
                                        "Sphere"};
     int abstracted_shape = 0;
@@ -106,6 +110,9 @@ int main(int argc, char *argv[]) {
 
     const char *pp_effects[] = {"None", "Halftone"};
     int pp_effect = 0;
+
+    const float PI = std::numbers::pi;
+    const float DEG2RAD = PI / 180.;
 
     float dot_size = 4.0;
     // https://en.wikipedia.org/wiki/Halftone#/media/File:CMYK_screen_angles.svg
@@ -176,8 +183,8 @@ int main(int argc, char *argv[]) {
                                  0.01f, 0.f, 1.f);
                 ImGui::DragFloat("Outline Position Factor",
                                  &outline_position_fac, 0.01f, 0.f, 1.f);
-                ImGui::DragFloat("Outline Edge Factor",
-                                 &outline_edge_fac, 0.01f, 0.f, 1.f);
+                ImGui::DragFloat("Outline Edge Factor", &outline_edge_fac,
+                                 0.01f, 0.f, 1.f);
                 ImGui::ColorPicker3("Outline Colour", &outline_col[0]);
                 ImGui::TreePop();
             }
@@ -256,7 +263,10 @@ int main(int argc, char *argv[]) {
                     ImGui::DragFloat("Shininess", &specular_s, 1e-2f, 1e-3f,
                                      1e4f);
                 }
-                if (ImGui::Checkbox("halftone", &nl_halftone)) {
+                ImGui::Checkbox("Halftone", &nl_halftone);
+                if (nl_halftone) {
+                    ImGui::DragFloat("Dot size", &xtoon_halftone_dot_size);
+                    ImGui::DragFloat("Rotation", &xtoon_halftone_rotation);
                 }
                 ImGui::TreePop();
             }
@@ -362,6 +372,10 @@ int main(int argc, char *argv[]) {
                                });
 
         xtoon_program.uni_1i(xtoon_program.loc("uni_nl_halftone"), nl_halftone);
+        xtoon_program.uni_1f(xtoon_program.loc("uni_dot_size"),
+                             xtoon_halftone_dot_size);
+        xtoon_program.uni_1f(xtoon_program.loc("uni_rotation"),
+                             xtoon_halftone_rotation * DEG2RAD);
 
         xtoon_pass.draw();
         frame_fb.unbind();
@@ -386,9 +400,6 @@ int main(int argc, char *argv[]) {
         pp_program.uni_1i(pp_program.loc("uni_id"), 69);
 
         pp_program.uni_1i(pp_program.loc("uni_pp_effect"), pp_effect);
-
-        const float PI = std::numbers::pi;
-        const float DEG2RAD = PI / 180.;
 
         pp_program.uni_1f(pp_program.loc("uni_dot_size"), dot_size);
         // https://en.wikipedia.org/wiki/Halftone#/media/File:CMYK_screen_angles.svg
@@ -442,7 +453,7 @@ int main(int argc, char *argv[]) {
                                outline_position_fac);
         outline_program.uni_1f(outline_program.loc("uni_outline_edge_fac"),
                                outline_edge_fac);
-        
+
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 

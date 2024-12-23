@@ -27,6 +27,8 @@ uniform float uni_dof_z_c;
 uniform vec3 uni_light_dir;
 
 uniform bool uni_nl_halftone;
+uniform float uni_dot_size;
+uniform float uni_rotation;
 
 // matrix rotation
 vec2 rotate(vec2 v, float r) {
@@ -44,13 +46,10 @@ void main()
 
     if (uni_nl_halftone)
     {
-        const float DOT_SIZE = 4.0;
-        const float ROTATION = 0.;
-
         vec2 frag_coord = uv * uni_screen_size;
 
-        vec2 uv_nl = rotate(round(rotate(frag_coord, ROTATION) / DOT_SIZE) * DOT_SIZE, -ROTATION);
-        float d_nl = distance(frag_coord, uv_nl) * sqrt(2.0) / DOT_SIZE;
+        vec2 uv_nl = rotate(round(rotate(frag_coord, uni_rotation) / uni_dot_size) * uni_dot_size, -uni_rotation);
+        float d_nl = distance(frag_coord, uv_nl) * sqrt(2.0) / uni_dot_size;
         float v_nl = dot(texture(uni_normal, uv_nl / uni_screen_size).xyz, uni_light_dir);
         nl = float(d_nl < v_nl);
     }
