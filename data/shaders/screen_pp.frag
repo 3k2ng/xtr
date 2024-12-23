@@ -1,3 +1,4 @@
+// post-processing shader, only comic halftone effect is available for now
 #version 330 core
 layout(location = 0) out vec4 frag_color;
 
@@ -10,13 +11,15 @@ uniform sampler2D uni_id_map;
 
 uniform int uni_id;
 
+// select the post-processing effect, 0 is none, and 1 is halftone
 uniform int uni_pp_effect;
 
-uniform float uni_dot_size;
-uniform float uni_rotation_c;
-uniform float uni_rotation_m;
-uniform float uni_rotation_y;
-uniform float uni_rotation_k;
+// halftone parameters
+uniform float uni_dot_size; // halftone max dot size
+uniform float uni_rotation_c; // orientation angle of the cyan layer
+uniform float uni_rotation_m; // orientation angle of the magenta layer
+uniform float uni_rotation_y; // orientation angle of the yellow layer
+uniform float uni_rotation_k; // orientation angle of the key layer
 
 // https://www.rapidtables.com/convert/color/rgb-to-cmyk.html
 vec4 rgb2cmyk(vec3 rgb) {
@@ -40,13 +43,15 @@ float soft_threshold(float value, float threshold) {
 }
 
 void main() {
+    // check if the id match
     int id = int(texture(uni_id_map, uv).x);
     if (uni_id != id) discard;
 
     if (uni_pp_effect == 0) {
         frag_color = texture(uni_frame, uv);
     }
-    else {
+    else if (uni_pp_effect == 1) {
+        // pixel coordinate
         vec2 frag_coord = uv * uni_screen_size;
 
         // nearest dot location
@@ -76,4 +81,5 @@ void main() {
         // combined result
         frag_color = vec4(vec3(col_c * col_m * col_y * col_k), 1.);
     }
+    else discard;
 }
