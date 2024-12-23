@@ -32,6 +32,7 @@ int main(int argc, char *argv[]) {
         mesh_files.push_back(file);
     }
 
+    // Load default mesh
     mesh_pass.upload_mesh(xtr::load_mesh(mesh_files[0], 0, true, true));
 
     const std::filesystem::path texture_directory = "./data/textures";
@@ -42,6 +43,7 @@ int main(int argc, char *argv[]) {
     }
 
     xtr::Texture tonemap_texture{GL_TEXTURE_2D};
+    // Load default tonemap texture
     tonemap_texture.load_file(texture_files[0]);
 
     xtr::Texture frame_texture{GL_TEXTURE_2D};
