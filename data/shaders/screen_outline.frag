@@ -66,7 +66,7 @@ void main()
     // naive outline method (normal dot view)
     if (uni_outline_type == 1) {
         float outline = abs(dot(normal, uni_camera_dir));
-        if (outline < uni_outline_thr) frag_color = vec4(uni_outline_col, outline);
+        if (outline < uni_outline_thr) frag_color = vec4(uni_outline_col, 1.f);
         else discard;
     }
     // edge detection method (roberts cross)
