@@ -50,6 +50,7 @@ int main(int argc, char *argv[]) {
          std::filesystem::directory_iterator{texture_directory}) {
         texture_files.push_back(file);
     }
+    std::sort(texture_files.begin(), texture_files.end());
 
     // create framebuffer and included frame texture for post-processing
     xtr::Texture frame_texture{GL_TEXTURE_2D};
@@ -80,7 +81,7 @@ int main(int argc, char *argv[]) {
     mesh_pass.upload_mesh(xtr::load_mesh(mesh_files[0], 0, mesh_y_up, mesh_x_front));
 
     // tonemap selection
-    int selected_texture = 4;
+    int selected_texture = 3; // green plastic
     // Set up tonemap texture object
     xtr::Texture tonemap_texture{GL_TEXTURE_2D};
     // Load default tonemap texture
@@ -92,9 +93,9 @@ int main(int argc, char *argv[]) {
     int detail_mapping = 3;
 
     // X-Toon Halftone
-    bool nl_halftone = false;           // halftone enabled?
+    bool nl_halftone = true;           // halftone enabled?
     float xtoon_halftone_dot_size = 4.; // dot size
-    float xtoon_halftone_rotation = 0.; // orientation angle
+    float xtoon_halftone_rotation = 69.; // orientation angle
 
     // outline options
     const char *outline_types[] = {"Off", "Near-silhouette", "Roberts Cross",
