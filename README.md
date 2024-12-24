@@ -15,7 +15,7 @@
 ## Building
 Project is built using CMake. 
 ### VSCode
-Having the [CMake Tools Extention](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cmake-tools) for VSCode would be cool. 
+Get [CMake Tools Extention](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cmake-tools) for VSCode, then run using the play button at the bottom.
 ### Visual Studio
 Project should work out of the box for Visual Studio.
 ### Build in terminal
