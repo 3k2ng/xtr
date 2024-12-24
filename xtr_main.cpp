@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
     // mesh pass to generate buffers necessary for xtoon and outline shader
     xtr::MeshPass mesh_pass(app.get_screen_width(), app.get_screen_height());
     // initialize camera object
-    xtr::TurnTableCamera camera{1.f, 11.f / 24.f * glm::pi<float>(), 0., {}};
+    xtr::TurnTableCamera camera{1.f, 13.f / 24.f * glm::pi<float>(), glm::pi<float>(), {}};
     // default model matrix
     glm::mat4 model_matrix{1.};
     // default perspective projection matrix
@@ -43,9 +43,6 @@ int main(int argc, char *argv[]) {
         mesh_files.push_back(file);
     }
 
-    // Load default model
-    mesh_pass.upload_mesh(xtr::load_mesh(mesh_files[0], 0, true, true));
-
     // aggregate tonemap file directories into a list
     const std::filesystem::path texture_directory = "./data/textures";
     std::vector<std::filesystem::path> texture_files;
@@ -53,10 +50,6 @@ int main(int argc, char *argv[]) {
          std::filesystem::directory_iterator{texture_directory}) {
         texture_files.push_back(file);
     }
-
-    xtr::Texture tonemap_texture{GL_TEXTURE_2D};
-    // Load default tonemap texture
-    tonemap_texture.load_file(texture_files[0]);
 
     // create framebuffer and included frame texture for post-processing
     xtr::Texture frame_texture{GL_TEXTURE_2D};
@@ -80,17 +73,23 @@ int main(int argc, char *argv[]) {
     // model selection
     int selected_mesh = 0;
     // is y the up axis
-    bool mesh_y_up = true;
+    bool mesh_y_up = false;
     // is x the front facing direction
-    bool mesh_x_front = true;
+    bool mesh_x_front = false;
+    // Load default model
+    mesh_pass.upload_mesh(xtr::load_mesh(mesh_files[0], 0, mesh_y_up, mesh_x_front));
 
     // tonemap selection
-    int selected_texture = 0;
+    int selected_texture = 4;
+    // Set up tonemap texture object
+    xtr::Texture tonemap_texture{GL_TEXTURE_2D};
+    // Load default tonemap texture
+    tonemap_texture.load_file(texture_files[selected_texture]);
 
     // detail mapping selection
     const char *detail_mappings[] = {"LOA", "Depth-of-field", "Near-silhouette",
                                      "Specular highlights"};
-    int detail_mapping = 0;
+    int detail_mapping = 3;
 
     // X-Toon Halftone
     bool nl_halftone = false;           // halftone enabled?
@@ -100,14 +99,14 @@ int main(int argc, char *argv[]) {
     // outline options
     const char *outline_types[] = {"Off", "Near-silhouette", "Roberts Cross",
                                    "Sobel"};
-    int outline_type = 0;
+    int outline_type = 3;
 
     // outline parameters
     float outline_col[3];
     float outline_thr = 0.4f;
     bool outline_id_fac = true; // use id to get object outline
     // edge difference contribution
-    float outline_normal_fac = 1.f;
+    float outline_normal_fac = 0.f;
     float outline_position_fac = 1.f;
     float outline_edge_fac = 1.f;
 
@@ -128,8 +127,9 @@ int main(int argc, char *argv[]) {
     int abstracted_shape = 0;
     float normal_factor = 0.;
 
-    // lighting options
-    float light_theta, light_phi; // a spherical light is controlled by 2 angles
+    // lighting options. a spherical light is controlled by 2 angles
+    float light_theta = -1.1f;
+    float light_phi = -0.61f;
 
     // background color
     float background_col[4] = {0.1f, 0.5f, 0.8f, 1.f};
