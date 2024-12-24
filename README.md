@@ -6,6 +6,12 @@
 - Implemented halftone post-processing
 - Combination of X-Toon and halftone dithering technique
 
+## Cool screenshots!
+![Suzanne](demo/suzanne.png?raw=true "Suzanne")
+![Armadillo](demo/armadillo.png?raw=true "Armadillo")
+![Augustus](demo/augustus.png?raw=true "Augustus")
+![Venus](demo/venus.png?raw=true "Venus")
+
 ## Building
 Project is built using CMake. 
 ### VSCode
