@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
     mesh_pass.upload_mesh(xtr::load_mesh(mesh_files[0], 0, mesh_y_up, mesh_x_front));
 
     // tonemap selection
-    int selected_texture = 3; // green plastic
+    int selected_texture = 3;
     // Set up tonemap texture object
     xtr::Texture tonemap_texture{GL_TEXTURE_2D};
     // Load default tonemap texture
